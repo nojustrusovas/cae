@@ -208,6 +208,10 @@ class SubWindow(QWidget):
         tile_pos = (flip_digits[f]-1, r-1)
         return tile_pos
     
+    def closeWindows(self) -> None:
+        for window in self.windowstack:
+            window.close()
+    
 
 class ConfirmWindow(QMainWindow):
     def __init__(self, parent):
@@ -227,8 +231,8 @@ class ConfirmWindow(QMainWindow):
         self.ui.no_button.clicked.connect(self.closeWindow)
 
     def closeWindow(self) -> None:
-        self.parent.windowstack.pop()
         self.close()
+        self.parent.parent.setCurrentSubwindow(0)
 
     # Override close event when window is manually closed
     def closeEvent(self, event: QCloseEvent):
