@@ -2,6 +2,7 @@
 
 from PySide6.QtWidgets import QWidget, QMainWindow
 from PySide6.QtCore import QTimer, Qt
+from PySide6.QtGui import QCloseEvent
 from subwindows.ui import chessboardui
 from math import floor
 
@@ -11,13 +12,16 @@ class SubWindow(QWidget):
         super().__init__()
         self.parent = parent
         self.ui = chessboardui.UI()
+        self.windowstack: list = []
+        self.confirmwindow = ConfirmWindow(self)
+        self.preferenceswindow = PreferencesWindow(self)
 
         # Board variables
-        self.duration = 75
-        self.active_tile = None
-        self.active_piece = None
-        self.second_active = None
-        self.player1_color = 'white'
+        self.duration: int = 75
+        self.active_tile: bool = None
+        self.active_piece: bool = None
+        self.second_active: bool = None
+        self.player1_color: str = 'white'
 
         self.render()
         self.timeController()
@@ -26,6 +30,17 @@ class SubWindow(QWidget):
     def render(self) -> None:
         self.ui.initUI(self)
         self.ui.player1_time.setText(self.convertTime(self.duration))
+
+        self.ui.exit_button.clicked.connect(self.openConfirmation)
+        self.ui.settings_button.clicked.connect(self.openPreferences)
+
+    def openConfirmation(self) -> None:
+        self.confirmwindow.show()
+        self.windowstack.append(self.confirmwindow)
+
+    def openPreferences(self) -> None:
+        self.preferenceswindow.show()
+        self.windowstack.append(self.preferenceswindow)
 
     # Update window data
     def refresh(self) -> None:
@@ -190,3 +205,54 @@ class SubWindow(QWidget):
                        5: 4, 6: 3, 7: 2, 8: 1}
         tile_pos = (flip_digits[f]-1, r-1)
         return tile_pos
+    
+
+class ConfirmWindow(QMainWindow):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.ui = chessboardui.UI_ConfirmWindow()
+
+        self.render()
+
+    # Render UI elements for the window
+    def render(self) -> None:
+        self.ui.initUI(self)
+        self.setFixedSize(318, 145)
+        self.setWindowTitle('Confirm')
+
+        self.ui.yes_button.clicked.connect(self.closeWindow)
+        self.ui.no_button.clicked.connect(self.closeWindow)
+
+    def closeWindow(self) -> None:
+        self.parent.windowstack.pop()
+        self.close()
+
+    # Override close event when window is manually closed
+    def closeEvent(self, event: QCloseEvent):
+        self.parent.windowstack.pop()
+        return super().closeEvent(event)
+
+
+class PreferencesWindow(QMainWindow):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+        self.ui = chessboardui.UI_PreferencesWindow()
+
+        self.render()
+
+    # Render UI elements for the window
+    def render(self) -> None:
+        self.ui.initUI(self)
+        self.setFixedSize(318, 244)
+        self.setWindowTitle('Preferences')
+
+    def closeWindow(self) -> None:
+        self.parent.windowstack.pop()
+        self.close()
+
+    # Override close event when window is manually closed
+    def closeEvent(self, event: QCloseEvent):
+        self.parent.windowstack.pop()
+        return super().closeEvent(event)

@@ -23,7 +23,7 @@ class SubWindow(QWidget):
         self.ui.initUI(self)
 
         self.ui.back_button.clicked.connect(self.parent.previousSubwindow)
-        self.ui.help_button.clicked.connect(self.displayHelpWindow)
+        self.ui.help_button.clicked.connect(self.openHelpWindow)
         self.ui.newgame_button.clicked.connect(self.finishConfig)
         self.ui.fen_checkbox.toggled.connect(self.stateChange)
 
@@ -88,7 +88,7 @@ class SubWindow(QWidget):
             for window in self.windowstack:
                 window.close()
 
-    def displayHelpWindow(self) -> None:
+    def openHelpWindow(self) -> None:
         self.helpwindow.show()
         self.windowstack.append(self.helpwindow)
 
@@ -170,6 +170,11 @@ class InfoWindow(QMainWindow):
     def closeWindow(self) -> None:
         self.parent.windowstack.pop()
         self.close()
+
+    # Override close event when window is manually closed
+    def closeEvent(self, event: QCloseEvent):
+        self.parent.windowstack.pop()
+        return super().closeEvent(event)
 
 
 class HelpWindow(QMainWindow):

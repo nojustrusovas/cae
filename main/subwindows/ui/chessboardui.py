@@ -1,8 +1,8 @@
 # main/subwindows/ui/chessboardui.py
 
-from PySide6.QtWidgets import QWidget, QGridLayout, QGroupBox, QPushButton, QLabel, QScrollArea, QVBoxLayout, QStyleOption, QStyle
+from PySide6.QtWidgets import QWidget, QGridLayout, QGroupBox, QPushButton, QLabel, QScrollArea, QVBoxLayout, QStyleOption, QStyle, QComboBox, QCheckBox
 from PySide6.QtGui import QFont, QPaintEvent, QPainter
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Qt, QRect, QMetaObject, QCoreApplication
 from PySide6.QtSvgWidgets import QSvgWidget
 
 
@@ -47,10 +47,10 @@ class UI(object):
         self.scrollarea.setWidget(self.scrollarea_contents)
 
         # Buttons
-        self.menu_button = QPushButton(chessboard)
-        self.menu_button.setText('Menu')
-        self.menu_button.setGeometry(QRect(630, 38, 51, 32))
-        self.menu_button.setFocusPolicy(Qt.NoFocus)
+        self.exit_button = QPushButton(chessboard)
+        self.exit_button.setText('Exit')
+        self.exit_button.setGeometry(QRect(630, 38, 51, 32))
+        self.exit_button.setFocusPolicy(Qt.NoFocus)
 
         self.settings_button = QPushButton(chessboard)
         self.settings_button.setText('Settings')
@@ -139,6 +139,108 @@ class UI(object):
                     self.piece_layout.addWidget(empty, row, col)
 
 
+class UI_ConfirmWindow(object):
+    def initUI(self, confirmwindow):
+        if not confirmwindow.objectName():
+            confirmwindow.setObjectName(u'confirmwindow')
+        confirmwindow.resize(318, 145)
+
+        # Buttons
+        self.yes_button = QPushButton(confirmwindow)
+        self.yes_button.setObjectName(u"yes_button")
+        self.yes_button.setGeometry(QRect(40, 90, 100, 32))
+
+        self.no_button = QPushButton(confirmwindow)
+        self.no_button.setObjectName(u"no_button")
+        self.no_button.setGeometry(QRect(170, 90, 100, 32))
+        self.no_button.setStyleSheet(u"color: rgb(255, 92, 91)")
+
+        self.heading = QLabel(confirmwindow)
+        self.heading.setObjectName(u"heading")
+        self.heading.setGeometry(QRect(80, 40, 171, 16))
+
+        self.retranslateUI(confirmwindow)
+        QMetaObject.connectSlotsByName(confirmwindow)
+
+    def retranslateUI(self, confirmwindow):
+        confirmwindow.setWindowTitle(QCoreApplication.translate("confirmwindow", u"Form", None))
+        self.yes_button.setText(QCoreApplication.translate("confirmwindow", u"Yes", None))
+        self.heading.setText(QCoreApplication.translate("confirmwindow", u"Save game before exiting?", None))
+        self.no_button.setText(QCoreApplication.translate("confirmwindow", u"No", None))
+
+
+class UI_PreferencesWindow(object):
+    def initUI(self, preferenceswindow):
+        if not preferenceswindow.objectName():
+            preferenceswindow.setObjectName(u'preferenceswindow')
+        preferenceswindow.resize(318, 244)
+
+        # Heading
+        self.heading = QLabel(preferenceswindow)
+        self.heading.setObjectName(u"heading")
+        self.heading.setGeometry(QRect(20, 20, 241, 16))
+        font = QFont()
+        font.setPointSize(15)
+        font.setBold(True)
+        self.heading.setFont(font)
+
+        # Colour theme
+        self.theme_sublabel = QLabel(preferenceswindow)
+        self.theme_sublabel.setObjectName(u"theme_sublabel")
+        self.theme_sublabel.setGeometry(QRect(20, 60, 91, 16))
+
+        self.theme_combo = QComboBox(preferenceswindow)
+        self.theme_combo.addItem("")
+        self.theme_combo.addItem("")
+        self.theme_combo.addItem("")
+        self.theme_combo.addItem("")
+        self.theme_combo.setObjectName(u"theme_combo")
+        self.theme_combo.setGeometry(QRect(110, 54, 141, 32))
+
+        # Subheading
+        self.subheading = QLabel(preferenceswindow)
+        self.subheading.setObjectName(u"subheading")
+        self.subheading.setGeometry(QRect(20, 90, 131, 16))
+        font2 = QFont()
+        font2.setBold(True)
+        self.subheading.setFont(font2)
+
+        # Preferences
+        self.movehints_checkbox = QCheckBox(preferenceswindow)
+        self.movehints_checkbox.setObjectName(u"movehints_checkbox")
+        self.movehints_checkbox.setGeometry(QRect(20, 120, 121, 20))
+
+        self.highlights_checkbox = QCheckBox(preferenceswindow)
+        self.highlights_checkbox.setObjectName(u"highlights_checkbox")
+        self.highlights_checkbox.setGeometry(QRect(20, 150, 151, 20))
+
+        self.movelog_checkbox = QCheckBox(preferenceswindow)
+        self.movelog_checkbox.setObjectName(u"movelog_checkbox")
+        self.movelog_checkbox.setGeometry(QRect(20, 180, 131, 20))
+
+        self.sound_checkbox = QCheckBox(preferenceswindow)
+        self.sound_checkbox.setObjectName(u"sound_checkbox")
+        self.sound_checkbox.setGeometry(QRect(20, 210, 131, 20))
+
+        self.retranslateUI(preferenceswindow)
+        QMetaObject.connectSlotsByName(preferenceswindow)
+
+    def retranslateUI(self, preferenceswindow):
+        preferenceswindow.setWindowTitle(QCoreApplication.translate("preferenceswindow", u"Form", None))
+        self.heading.setText(QCoreApplication.translate("preferenceswindow", u"Preferences and accessibility:", None))
+        self.theme_sublabel.setText(QCoreApplication.translate("preferenceswindow", u"Colour theme:", None))
+        self.theme_combo.setItemText(0, QCoreApplication.translate("preferenceswindow", u"Default", None))
+        self.theme_combo.setItemText(1, QCoreApplication.translate("preferenceswindow", u"Classic", None))
+        self.theme_combo.setItemText(2, QCoreApplication.translate("preferenceswindow", u"Green", None))
+        self.theme_combo.setItemText(3, QCoreApplication.translate("preferenceswindow", u"Black and white", None))
+        self.theme_combo.setCurrentText(QCoreApplication.translate("preferenceswindow", u"Default", None))
+        self.subheading.setText(QCoreApplication.translate("preferenceswindow", u"Visual preferences:", None))
+        self.movehints_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Hide move hints", None))
+        self.highlights_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Hide board highlights", None))
+        self.movelog_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Hide move log", None))
+        self.sound_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Mute sound", None))
+
+
 class Piece(QSvgWidget):
     def __init__(self, name: str, color: str, pos: tuple):
         super().__init__()
@@ -146,7 +248,7 @@ class Piece(QSvgWidget):
         self.color = color
         self.pos = pos
         if name is not None:
-            self.load('images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
+            self.load('main/images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
 
     def pieceInformation(self) -> tuple:
         return (self.name, self.color, self.pos)
@@ -156,9 +258,9 @@ class Piece(QSvgWidget):
         self.color = color
         self.pos = pos
         if name is not None:
-            self.load('images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
+            self.load('main/images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
         else:
-            self.load('images/none.svg')
+            self.load('main/images/none.svg')
 
 
 class Tile(QWidget):
