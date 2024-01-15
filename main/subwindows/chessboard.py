@@ -35,12 +35,14 @@ class SubWindow(QWidget):
         self.ui.settings_button.clicked.connect(self.openPreferences)
 
     def openConfirmation(self) -> None:
-        self.confirmwindow.show()
-        self.windowstack.append(self.confirmwindow)
+        if not self.windowstack:
+            self.confirmwindow.show()
+            self.windowstack.append(self.confirmwindow)
 
     def openPreferences(self) -> None:
-        self.preferenceswindow.show()
-        self.windowstack.append(self.preferenceswindow)
+        if not self.windowstack:
+            self.preferenceswindow.show()
+            self.windowstack.append(self.preferenceswindow)
 
     # Update window data
     def refresh(self) -> None:

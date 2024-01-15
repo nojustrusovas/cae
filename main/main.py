@@ -2,6 +2,7 @@
 
 import sys
 import PySide6.QtCore
+from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
 from subwindows import homepage, newgameconfig, chessboard
 
@@ -48,6 +49,11 @@ class MainWindow(QMainWindow):
     # Public method to close application
     def quitApplication(self) -> None:
         self.application.quit()
+
+    # Override close event when window is manually closed
+    def closeEvent(self, event: QCloseEvent):
+        self.application.quit()
+        return super().closeEvent(event)
 
 # Handles top-level exceptions
 def except_hook(cls, exception, traceback):
