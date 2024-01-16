@@ -121,14 +121,9 @@ class UI(object):
 
                 self.board_layout.addWidget(tile, row, col)
 
-                if (row == 2) and (col == 2):
-                    test_piece = Piece('pawn', 'black', (file, flip_digits[rank]))
-                    test_piece.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
-                    self.piece_layout.addWidget(test_piece, row, col)
-                else:
-                    empty = Piece(None, None, (file, flip_digits[rank]))
-                    empty.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
-                    self.piece_layout.addWidget(empty, row, col)
+                empty = Piece(None, None)
+                empty.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
+                self.piece_layout.addWidget(empty, row, col)
 
     def changeTheme(self, light, dark):
         for row, rank in enumerate('12345678'):
@@ -245,21 +240,19 @@ class UI_PreferencesWindow(object):
 
 
 class Piece(QSvgWidget):
-    def __init__(self, name: str, color: str, pos: tuple):
+    def __init__(self, name: str, color: str):
         super().__init__()
         self.name = name
         self.color = color
-        self.pos = pos
         if name is not None:
             self.load('main/images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
 
     def pieceInformation(self) -> tuple:
         return (self.name, self.color, self.pos)
     
-    def setPieceInformation(self, name: str, color: str, pos: tuple):
+    def setPieceInformation(self, name: str, color: str):
         self.name = name
         self.color = color
-        self.pos = pos
         if name is not None:
             self.load('main/images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
         else:

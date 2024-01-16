@@ -25,7 +25,7 @@ class SubWindow(QWidget):
         self.active_tile: bool = None
         self.active_piece: bool = None
         self.second_active: bool = None
-        self.player1_color: str = 'black'
+        self.player1_color: str = 'white'
         self.hide_highlights = False
 
         self.render()
@@ -36,6 +36,7 @@ class SubWindow(QWidget):
         self.ui.initUI(self)
         self.ui.player1_time.setText(self.convertTime(self.clock1))
         self.ui.player2_time.setText(self.convertTime(self.clock2))
+        self.importFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
 
         self.ui.exit_button.clicked.connect(self.openConfirmation)
         self.ui.settings_button.clicked.connect(self.openPreferences)
@@ -61,6 +62,43 @@ class SubWindow(QWidget):
         self.parent.setFixedSize(1000, 700)
         self.parent.setWindowTitle('Chessboard')
 
+    # Imports FEN string
+    def importFEN(self, fen: str) -> None:
+        # Splits fen string into sections and sets variables
+        self.fen = fen
+        sections = fen.split(' ')
+        self.piece_placement: str = sections[0]
+        self.active_color: str = sections[1]
+        self.castling_availability: str = sections[2]
+        self.enpassant_square: str = sections[3]
+        self.halfmove_clock: str = sections[4]
+        self.fullmove_clock: str = sections[5]
+
+        # Process piece placement data
+        piece_ref = {'p': 'pawn', 'r': 'rook', 'b': 'bishop',
+                     'n': 'knight','k': 'king', 'q': 'queen'}
+        pieces = list(self.piece_placement)
+        rank = 8
+        file = 8
+        for piece in pieces:
+            if piece == '/':
+                rank -= 1
+                file = 8
+            elif piece.isnumeric():
+                file += int(piece)
+            elif piece.lower() in piece_ref:
+                pos = self.convertToPieceLayoutPos(file, rank, True)
+                if piece.isupper():
+                    self.placePiece(piece_ref[piece.lower()], 'black', pos)
+                else:
+                    self.placePiece(piece_ref[piece], 'white', pos)
+                file -= 1
+
+    # Places pieces at specific position
+    def placePiece(self, piece: str, color: str, pos: tuple) -> None:
+        piecewidget = self.ui.piece_layout.itemAtPosition(pos[1], pos[0]).widget()
+        piecewidget.setPieceInformation(piece, color)
+
     # Converts seconds to MM:SS format
     def convertTime(self, seconds) -> str:
         decimal = seconds / 60
@@ -76,6 +114,19 @@ class SubWindow(QWidget):
             minutes = f'0{str(minutes)}'
         
         return f'{minutes}:{seconds}'
+
+    def convertToPieceLayoutPos(self, f, r, int: bool) -> tuple:
+        files = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8}
+        if not int:
+            file = files[f]
+            rank = int(r)
+        else:
+            file = f
+            rank = r
+        flip_digits = {1: 8, 2: 7, 3: 6, 4: 5,
+                       5: 4, 6: 3, 7: 2, 8: 1}
+        tile_pos = (flip_digits[file]-1, rank-1)
+        return tile_pos
 
     # Updates timer 1 for timeController
     def update1(self):
@@ -147,7 +198,7 @@ class SubWindow(QWidget):
             elif piece.pieceInformation()[1] != self.player1_color:
                 # If a piece is selected, move the piece
                 if self.active_tile is not None:
-                    self.moveTile(self.active_piece, piece)
+                    self.movePiece(self.active_piece, piece)
                     self.second_active = tile
                     if not self.hide_highlights:
                         self.second_active.setStyleSheet(f'background-color: {self.highlight}')
@@ -179,11 +230,10 @@ class SubWindow(QWidget):
                 self.movelogflag = False
 
     # Moves piece
-    def moveTile(self, piece, target):
+    def movePiece(self, piece, target):
         pieceinfo = piece.pieceInformation()
-        targetinfo = piece.pieceInformation()
-        piece.setPieceInformation(None, None, pieceinfo[2])
-        target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
+        piece.setPieceInformation(None, None)
+        target.setPieceInformation(pieceinfo[0], pieceinfo[1])
 
     # Algorithm to find the column and row of the target tile
     def findTile(self, clickpos):
@@ -248,10 +298,7 @@ class SubWindow(QWidget):
                 r = 1
             else:
                 r += 1
-        flip_digits = {1: 8, 2: 7, 3: 6, 4: 5,
-                       5: 4, 6: 3, 7: 2, 8: 1}
-        tile_pos = (flip_digits[f]-1, r-1)
-        return tile_pos
+        return self.convertToPieceLayoutPos(f, r, True)
     
     def closeWindows(self) -> None:
         for window in self.windowstack:
