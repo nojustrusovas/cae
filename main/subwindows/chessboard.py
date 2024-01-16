@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QWidget, QMainWindow
 from PySide6.QtCore import QTimer, Qt
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QKeyEvent
 from subwindows.ui import chessboardui
 from math import floor
 
@@ -17,11 +17,16 @@ class SubWindow(QWidget):
         self.preferenceswindow = PreferencesWindow(self)
 
         # Board variables
-        self.duration: int = 75
+        self.movelogflag: bool = False
+        self.clock1: int = 75
+        self.clock2: int = 75
+        self.highlight: str = '#B0A7F6'
+        self.highlight2: str = '#A49BE8'
         self.active_tile: bool = None
         self.active_piece: bool = None
         self.second_active: bool = None
-        self.player1_color: str = 'white'
+        self.player1_color: str = 'black'
+        self.hide_highlights = False
 
         self.render()
         self.timeController()
@@ -29,20 +34,27 @@ class SubWindow(QWidget):
     # Render UI elements for subwindow
     def render(self) -> None:
         self.ui.initUI(self)
-        self.ui.player1_time.setText(self.convertTime(self.duration))
+        self.ui.player1_time.setText(self.convertTime(self.clock1))
+        self.ui.player2_time.setText(self.convertTime(self.clock2))
 
         self.ui.exit_button.clicked.connect(self.openConfirmation)
         self.ui.settings_button.clicked.connect(self.openPreferences)
 
+    # Open confirmation window
     def openConfirmation(self) -> None:
         if not self.windowstack:
             self.confirmwindow.show()
             self.windowstack.append(self.confirmwindow)
+        else:
+            self.confirmwindow.close()
 
+    # Open preferences window
     def openPreferences(self) -> None:
         if not self.windowstack:
             self.preferenceswindow.show()
             self.windowstack.append(self.preferenceswindow)
+        else:
+            self.preferenceswindow.close()
 
     # Update window data
     def refresh(self) -> None:
@@ -51,9 +63,9 @@ class SubWindow(QWidget):
 
     # Converts seconds to MM:SS format
     def convertTime(self, seconds) -> str:
-        decimal = self.duration / 60
+        decimal = seconds / 60
         minutes = floor(decimal)
-        seconds = self.duration - (minutes * 60)
+        seconds = seconds - (minutes * 60)
         if seconds > 9:
             seconds = str(seconds)
         else:
@@ -65,22 +77,33 @@ class SubWindow(QWidget):
         
         return f'{minutes}:{seconds}'
 
-    # Updates timer for timeController
-    def update(self):
-        self.duration -= 1
-        self.ui.player1_time.setText(self.convertTime(self.duration))
+    # Updates timer 1 for timeController
+    def update1(self):
+        self.clock1 -= 1
+        self.ui.player1_time.setText(self.convertTime(self.clock1))
 
-        if self.duration == 0:
-            self.timer.stop()
+        if self.clock1 == 0:
+            self.timer1.stop()
+
+    # Updates timer 2 for timeController
+    def update2(self):
+        self.clock2 -= 1
+        self.ui.player2_time.setText(self.convertTime(self.clock2))
+
+        if self.clock2 == 0:
+            self.timer2.stop()
 
     # Controls the countdown and functionality of the timers
     def timeController(self) -> None:
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update)
-        self.timer.start(1000)
+        self.timer1 = QTimer()
+        self.timer2 = QTimer()
+        self.timer1.timeout.connect(self.update1)
+        self.timer2.timeout.connect(self.update2)
+        self.timer1.start(1000)
+        self.timer2.start(1000)
 
-# Executes upon mouse click
-    def mousePressEvent(self, event):
+    # Executes upon mouse click
+    def mousePressEvent(self, event: QKeyEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
             self.click_pos = ( event.pos().x(), event.pos().y() )
             tile_pos = self.findTile(self.click_pos)
@@ -111,27 +134,49 @@ class SubWindow(QWidget):
                     if self.active_tile is None:
                         self.active_tile = tile
                         self.active_piece = piece
-                        self.active_tile.setStyleSheet('background-color: #B0A7F6')
+                        if not self.hide_highlights:
+                            self.active_tile.setStyleSheet(f'background-color: {self.highlight}')
                     else:
                         # Select another piece
                         self.active_tile.resetColor()
                         self.active_tile = tile
                         self.active_piece = piece
-                        self.active_tile.setStyleSheet('background-color: #B0A7F6')
+                        if not self.hide_highlights:
+                            self.active_tile.setStyleSheet(f'background-color: {self.highlight}')
             # Check if selected piece is not the same as the player's colour
             elif piece.pieceInformation()[1] != self.player1_color:
                 # If a piece is selected, move the piece
                 if self.active_tile is not None:
                     self.moveTile(self.active_piece, piece)
                     self.second_active = tile
-                    self.second_active.setStyleSheet('background-color: #B0A7F6')
-                    self.active_tile.setStyleSheet('background-color: #A49BE8')
+                    if not self.hide_highlights:
+                        self.second_active.setStyleSheet(f'background-color: {self.highlight}')
+                        self.active_tile.setStyleSheet(f'background-color: {self.highlight2}')
             # Deselect tiles
             else:
                 self.active_tile = None
                 self.active_piece = None
 
-        return True
+    # Executes upon key press
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        # Minimise move log when 'M' is pressed
+        if event.key() == Qt.Key.Key_M:
+            if not self.movelogflag:
+                self.ui.groupbox.hide()
+                self.ui.divider.hide()
+                self.ui.scrollarea.hide()
+                self.ui.exit_button.hide()
+                self.ui.settings_button.hide()
+                self.parent.setFixedSize(620, 700)
+                self.movelogflag = True
+            else:
+                self.ui.groupbox.show()
+                self.ui.divider.show()
+                self.ui.scrollarea.show()
+                self.ui.exit_button.show()
+                self.ui.settings_button.show()
+                self.parent.setFixedSize(1000, 700)
+                self.movelogflag = False
 
     # Moves piece
     def moveTile(self, piece, target):
@@ -245,6 +290,8 @@ class PreferencesWindow(QMainWindow):
         super().__init__()
         self.parent = parent
         self.ui = chessboardui.UI_PreferencesWindow()
+        self.blindfoldflag = False
+        self.highlightsflag = False
 
         self.render()
 
@@ -254,6 +301,58 @@ class PreferencesWindow(QMainWindow):
         self.setFixedSize(318, 244)
         self.setWindowTitle('Preferences')
 
+        self.ui.theme_combo.currentIndexChanged.connect(self.changeTheme)
+        self.ui.blindfold_checkbox.toggled.connect(self.blindfold)
+        self.ui.highlights_checkbox.toggled.connect(self.hideHighlights)
+
+    def hideHighlights(self) -> None:
+            self.resetHighlights()
+            self.parent.hide_highlights = not self.parent.hide_highlights
+    
+    def blindfold(self) -> None:
+        if not self.blindfoldflag:
+            for x in range(64):
+                piece = self.parent.ui.piece_layout.itemAt(x).widget()
+                piece.hide()
+            self.blindfoldflag = True
+        else:
+            for x in range(64):
+                piece = self.parent.ui.piece_layout.itemAt(x).widget()
+                piece.show()
+            self.blindfoldflag = False
+
+    def resetHighlights(self) -> None:
+        if self.parent.active_tile is not None:
+            self.parent.active_tile.resetColor()
+            self.parent.active_tile = None
+        if self.parent.second_active is not None:
+            self.parent.second_active.resetColor()
+            self.parent.second_active = None
+        self.parent.active_piece = None
+    
+    def changeTheme(self) -> None:
+        index = self.ui.theme_combo.currentIndex()
+        if index == 0:
+            self.parent.highlight = '#B0A7F6'
+            self.parent.highlight2 = '#A49BE8'
+            self.resetHighlights()
+            self.parent.ui.changeTheme('#E9EDF8', '#B9C0D6')
+        if index == 1:
+            self.parent.highlight = '#EAECA0'
+            self.parent.highlight2 = '#E1E399'
+            self.resetHighlights()
+            self.parent.ui.changeTheme('#F1D9B4', '#DBBE9B')
+        if index == 2:
+            self.parent.highlight = '#F4F67F'
+            self.parent.highlight2 = '#BBCC42'
+            self.resetHighlights()
+            self.parent.ui.changeTheme('#E9EDCC', '#779954')
+        if index == 3:
+            self.parent.highlight = '#A2D5FA'
+            self.parent.highlight2 = '#7FA9C7'
+            self.resetHighlights()
+            self.parent.ui.changeTheme('#F0F3F4', '#727C8A')
+    
     def closeWindow(self) -> None:
         self.parent.windowstack.pop()
         self.close()

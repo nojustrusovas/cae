@@ -95,11 +95,11 @@ class UI(object):
         self.player2_time.setGeometry(QRect(540, 30, 61, 20))
         self.player2_time.setFont(font2)
 
-        self.drawTiles('#E8EDF9', '#B7C0D8', chessboard)
+        self.drawTiles('#E9EDF8', '#B9C0D6')
 
 
     # Draw tiles and add to grid
-    def drawTiles(self, col1, col2, chessboard) -> None:
+    def drawTiles(self, col1, col2) -> None:
         self.col1 = col1 # Assign light tile colour as hex string
         self.col2 = col2 # Assign dark tile colour as hex string
         self.tile_size = (self.board.geometry().height() / 8, self.board.geometry().width() / 8)
@@ -121,22 +121,25 @@ class UI(object):
 
                 self.board_layout.addWidget(tile, row, col)
 
-                if (row == 6) and (col == 2):
+                if (row == 2) and (col == 2):
                     test_piece = Piece('pawn', 'black', (file, flip_digits[rank]))
-                    test_piece.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
-                    self.piece_layout.addWidget(test_piece, row, col)
-                elif (row == 6) and (col == 3):
-                    test_piece = Piece('pawn', 'white', (file, flip_digits[rank]))
-                    test_piece.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
-                    self.piece_layout.addWidget(test_piece, row, col)
-                elif (row == 4) and (col == 2):
-                    test_piece = Piece('bishop', 'white', (file, flip_digits[rank]))
                     test_piece.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
                     self.piece_layout.addWidget(test_piece, row, col)
                 else:
                     empty = Piece(None, None, (file, flip_digits[rank]))
                     empty.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
                     self.piece_layout.addWidget(empty, row, col)
+
+    def changeTheme(self, light, dark):
+        for row, rank in enumerate('12345678'):
+            for col, file in enumerate('abcdefgh'):
+                tile = self.board_layout.itemAtPosition(row, col).widget()
+                if row % 2 == col % 2:
+                    tile.setDefaultColor(light)
+                    tile.resetColor()
+                else:
+                    tile.setDefaultColor(dark)
+                    tile.resetColor()
 
 
 class UI_ConfirmWindow(object):
@@ -214,9 +217,9 @@ class UI_PreferencesWindow(object):
         self.highlights_checkbox.setObjectName(u"highlights_checkbox")
         self.highlights_checkbox.setGeometry(QRect(20, 150, 151, 20))
 
-        self.movelog_checkbox = QCheckBox(preferenceswindow)
-        self.movelog_checkbox.setObjectName(u"movelog_checkbox")
-        self.movelog_checkbox.setGeometry(QRect(20, 180, 131, 20))
+        self.blindfold_checkbox = QCheckBox(preferenceswindow)
+        self.blindfold_checkbox.setObjectName(u"blindfold_checkbox")
+        self.blindfold_checkbox.setGeometry(QRect(20, 180, 131, 20))
 
         self.sound_checkbox = QCheckBox(preferenceswindow)
         self.sound_checkbox.setObjectName(u"sound_checkbox")
@@ -232,12 +235,12 @@ class UI_PreferencesWindow(object):
         self.theme_combo.setItemText(0, QCoreApplication.translate("preferenceswindow", u"Default", None))
         self.theme_combo.setItemText(1, QCoreApplication.translate("preferenceswindow", u"Classic", None))
         self.theme_combo.setItemText(2, QCoreApplication.translate("preferenceswindow", u"Green", None))
-        self.theme_combo.setItemText(3, QCoreApplication.translate("preferenceswindow", u"Black and white", None))
+        self.theme_combo.setItemText(3, QCoreApplication.translate("preferenceswindow", u"High Contrast", None))
         self.theme_combo.setCurrentText(QCoreApplication.translate("preferenceswindow", u"Default", None))
         self.subheading.setText(QCoreApplication.translate("preferenceswindow", u"Visual preferences:", None))
         self.movehints_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Hide move hints", None))
         self.highlights_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Hide board highlights", None))
-        self.movelog_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Hide move log", None))
+        self.blindfold_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Blindfold mode", None))
         self.sound_checkbox.setText(QCoreApplication.translate("preferenceswindow", u"Mute sound", None))
 
 
