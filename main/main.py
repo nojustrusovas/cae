@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
         self.stackedwidget.setCurrentIndex(index)
         self.stackedwidget.currentWidget().refresh()
         print(f'Subwindow change request, {self.stackedwidget.currentWidget()}')
+        self.centreWindow()
 
     # Display previously opened sub window and remove
     # latest index from the stack
@@ -54,6 +55,13 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event: QCloseEvent):
         self.application.quit()
         return super().closeEvent(event)
+    
+    # Centres window
+    def centreWindow(self) -> None:
+        frame = self.frameGeometry()
+        centre_point = self.screen().availableGeometry().center()
+        frame.moveCenter(centre_point)
+        self.move(frame.topLeft())
 
 # Handles top-level exceptions
 def except_hook(cls, exception, traceback):
