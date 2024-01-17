@@ -17,9 +17,12 @@ class SubWindow(QWidget):
         self.preferenceswindow = PreferencesWindow(self)
 
         # Board variables
+        self.firstmove: bool = False
         self.movelogflag: bool = False
         self.clock1: int = 75
+        self.clock1_active: bool = False
         self.clock2: int = 75
+        self.clock2_active: bool = False
         self.highlight: str = '#B0A7F6'
         self.highlight2: str = '#A49BE8'
         self.active_tile: bool = None
@@ -29,7 +32,6 @@ class SubWindow(QWidget):
         self.hide_highlights = False
 
         self.render()
-        self.timeController()
 
     # Render UI elements for subwindow
     def render(self) -> None:
@@ -71,8 +73,8 @@ class SubWindow(QWidget):
         self.active_color: str = sections[1]
         self.castling_availability: str = sections[2]
         self.enpassant_square: str = sections[3]
-        self.halfmove_clock: str = sections[4]
-        self.fullmove_clock: str = sections[5]
+        self.halfmove_clock: int = int(sections[4])
+        self.fullmove_clock: int = int(sections[5])
 
         # Process piece placement data
         piece_ref = {'p': 'pawn', 'r': 'rook', 'b': 'bishop',
@@ -93,6 +95,58 @@ class SubWindow(QWidget):
                 else:
                     self.placePiece(piece_ref[piece], 'white', pos)
                 file -= 1
+
+    # Returns new FEN string
+    def exportFEN(self) -> str:
+        piece_ref = {'pawn': 'p', 'rook': 'r', 'bishop': 'b',
+                     'knight': 'n','king': 'k', 'queen': 'q'}
+        pieces = []
+        empty = 0
+        a = 1
+        rank = 8
+        file = 8
+
+        for i in range(64):
+            if (i+1) == ((a * 8) + 1):
+                if empty > 1:
+                    pieces.append(str(empty))
+                    empty = 0
+                pieces.append('/')
+                file = 8
+                a += 1
+                rank -= 1
+                empty = 0
+            piecepos = self.convertToPieceLayoutPos(file, rank, True)
+            piecewidget = self.ui.piece_layout.itemAtPosition(piecepos[1], piecepos[0]).widget()
+            if piecewidget.pieceInformation()[0] is None:
+                empty += 1
+                file -= 1
+                continue
+            piece = piece_ref[piecewidget.pieceInformation()[0]]
+            if piecewidget.pieceInformation()[1] == 'black':
+                piece = piece.upper()
+            if empty != 0:
+                pieces.append(str(empty))
+                empty = 0
+            pieces.append(piece)
+            file -= 1
+
+        pieces.append(' ')
+        pieces.append(self.active_color)
+        pieces.append(' ')
+        pieces.append(self.castling_availability)
+        pieces.append(' ')
+        pieces.append(self.enpassant_square)
+        pieces.append(' ')
+        pieces.append(str(self.halfmove_clock))
+        pieces.append(' ')
+        pieces.append(str(self.fullmove_clock))
+
+        fen = ''
+        for char in pieces:
+            fen += char
+        
+        return fen
 
     # Places pieces at specific position
     def placePiece(self, piece: str, color: str, pos: tuple) -> None:
@@ -150,8 +204,32 @@ class SubWindow(QWidget):
         self.timer2 = QTimer()
         self.timer1.timeout.connect(self.update1)
         self.timer2.timeout.connect(self.update2)
-        self.timer1.start(1000)
-        self.timer2.start(1000)
+        if not self.firstmove:
+            if self.player1_color == 'white':
+                self.timer1.start(1000)
+                self.clock1_active = True
+            else:
+                self.timer2.start(1000)
+                self.clock2_active = True
+
+    # Switches timers
+    def timeSwitch(self) -> None:
+        if self.clock1_active:
+            self.timer1.stop()
+            self.timer2.start(1000)
+            self.clock1_active = False
+            self.clock2_active = True
+            self.clock1 += 1
+            self.ui.player1_time.setText(self.convertTime(self.clock1))
+        elif self.clock2_active:
+            self.timer2.stop()
+            self.timer1.start(1000)
+            self.clock1_active = True
+            self.clock2_active = False
+            self.clock2 += 1
+            self.ui.player2_time.setText(self.convertTime(self.clock2))
+        else:
+            return
 
     # Executes upon mouse click
     def mousePressEvent(self, event: QKeyEvent) -> None:
@@ -165,8 +243,32 @@ class SubWindow(QWidget):
                 return True
             tile = self.ui.board_layout.itemAtPosition(tile_pos[1], tile_pos[0]).widget()
             piece = self.ui.piece_layout.itemAtPosition(tile_pos[1], tile_pos[0]).widget()
+            self.moveInputLogic(tile, piece)
 
-            # Resets highlighted tiles after recent move
+    # Executes upon key press
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        # Minimise move log when 'M' is pressed
+        if event.key() == Qt.Key.Key_M:
+            if not self.movelogflag:
+                self.ui.groupbox.hide()
+                self.ui.divider.hide()
+                self.ui.scrollarea.hide()
+                self.ui.exit_button.hide()
+                self.ui.settings_button.hide()
+                self.parent.setFixedSize(620, 700)
+                self.movelogflag = True
+            else:
+                self.ui.groupbox.show()
+                self.ui.divider.show()
+                self.ui.scrollarea.show()
+                self.ui.exit_button.show()
+                self.ui.settings_button.show()
+                self.parent.setFixedSize(1000, 700)
+                self.movelogflag = False
+
+    # Handles moving and highlighting of pieces
+    def moveInputLogic(self, tile, piece):
+        # Resets highlighted tiles after recent move
             if self.second_active is not None:
                 self.active_tile.resetColor()
                 self.active_tile = None
@@ -208,32 +310,24 @@ class SubWindow(QWidget):
                 self.active_tile = None
                 self.active_piece = None
 
-    # Executes upon key press
-    def keyPressEvent(self, event: QKeyEvent) -> None:
-        # Minimise move log when 'M' is pressed
-        if event.key() == Qt.Key.Key_M:
-            if not self.movelogflag:
-                self.ui.groupbox.hide()
-                self.ui.divider.hide()
-                self.ui.scrollarea.hide()
-                self.ui.exit_button.hide()
-                self.ui.settings_button.hide()
-                self.parent.setFixedSize(620, 700)
-                self.movelogflag = True
-            else:
-                self.ui.groupbox.show()
-                self.ui.divider.show()
-                self.ui.scrollarea.show()
-                self.ui.exit_button.show()
-                self.ui.settings_button.show()
-                self.parent.setFixedSize(1000, 700)
-                self.movelogflag = False
-
     # Moves piece
     def movePiece(self, piece, target):
         pieceinfo = piece.pieceInformation()
         piece.setPieceInformation(None, None)
         target.setPieceInformation(pieceinfo[0], pieceinfo[1])
+        # Switch active colour
+        if self.active_color == 'w':
+            self.player1_color = 'black'
+            self.active_color = 'b'
+        else:
+            self.player1_color = 'white'
+            self.active_color = 'w'
+        # First move
+        if not self.firstmove:
+            self.timeController()
+            self.firstmove = True
+            return
+        self.timeSwitch()
 
     # Algorithm to find the column and row of the target tile
     def findTile(self, clickpos):
