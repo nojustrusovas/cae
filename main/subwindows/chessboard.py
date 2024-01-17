@@ -260,22 +260,27 @@ class SubWindow(QWidget):
                     tile_num += 1
 
         # Identify target vertex
-        targetvertex_x = 0
         x = end[0]
-        targetvertex_y = 0
         y = end[1]
+        overload = 0
 
         while True:
             if (clickpos[0] < x) and (clickpos[0] > x-70):
                 targetvertex_x = x
                 break
             else:
+                overload += 1
+                if (overload == 1000):
+                    return None
                 x -= 70
         while True:
             if (clickpos[1] < y) and (clickpos[1] > y-70):
                 targetvertex_y = y
                 break
             else:
+                overload += 1
+                if (overload == 1000):
+                    return None
                 y -= 70
 
         targetvertex_2 = (targetvertex_x, targetvertex_y)
@@ -298,6 +303,7 @@ class SubWindow(QWidget):
                 r = 1
             else:
                 r += 1
+
         return self.convertToPieceLayoutPos(f, r, True)
     
     def closeWindows(self) -> None:
