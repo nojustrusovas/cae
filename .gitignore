@@ -6,8 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
-# Qt files
+# Testing and design files
 *.ui
+*.ipynb
 
 # Distribution / packaging
 .Python

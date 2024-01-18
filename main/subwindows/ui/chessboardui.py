@@ -121,7 +121,7 @@ class UI(object):
 
                 self.board_layout.addWidget(tile, row, col)
 
-                empty = Piece(None, None)
+                empty = Piece(None, None, file+flip_digits[rank])
                 empty.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
                 self.piece_layout.addWidget(empty, row, col)
 
@@ -240,17 +240,19 @@ class UI_PreferencesWindow(object):
 
 
 class Piece(QSvgWidget):
-    def __init__(self, name: str, color: str):
+    def __init__(self, name: str, color: str, pos: str):
         super().__init__()
         self.name = name
         self.color = color
+        self.pos = pos
+        self.moved = False
         if name is not None:
             self.load('main/images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
 
     def pieceInformation(self) -> tuple:
         return (self.name, self.color, self.pos)
     
-    def setPieceInformation(self, name: str, color: str):
+    def setPieceInformation(self, name: str, color: str, pos: str):
         self.name = name
         self.color = color
         if name is not None:

@@ -79,6 +79,9 @@ class SubWindow(QWidget):
         # Process piece placement data
         piece_ref = {'p': 'pawn', 'r': 'rook', 'b': 'bishop',
                      'n': 'knight','k': 'king', 'q': 'queen'}
+        flip_digits = {1: 8, 2: 7, 3: 6, 4: 5,
+                       5: 4, 6: 3, 7: 2, 8: 1}
+        
         pieces = list(self.piece_placement)
         rank = 8
         file = 8
@@ -89,11 +92,12 @@ class SubWindow(QWidget):
             elif piece.isnumeric():
                 file += int(piece)
             elif piece.lower() in piece_ref:
-                pos = self.convertToPieceLayoutPos(file, rank, True)
+                pos = self.convertToPieceLayoutPos((flip_digits[file], flip_digits[rank]))
+                tilepos = self.convertSquareNotation((file,rank))
                 if piece.isupper():
-                    self.placePiece(piece_ref[piece.lower()], 'black', pos)
+                    self.placePiece(piece_ref[piece.lower()], 'black', pos, tilepos)
                 else:
-                    self.placePiece(piece_ref[piece], 'white', pos)
+                    self.placePiece(piece_ref[piece], 'white', pos, tilepos)
                 file -= 1
 
     # Returns new FEN string
@@ -116,8 +120,8 @@ class SubWindow(QWidget):
                 a += 1
                 rank -= 1
                 empty = 0
-            piecepos = self.convertToPieceLayoutPos(file, rank, True)
-            piecewidget = self.ui.piece_layout.itemAtPosition(piecepos[1], piecepos[0]).widget()
+            piecepos = self.convertToPieceLayoutPos((file, rank))
+            piecewidget = self.ui.piece_layout.itemAtPosition(piecepos[0], piecepos[1]).widget()
             if piecewidget.pieceInformation()[0] is None:
                 empty += 1
                 file -= 1
@@ -149,9 +153,10 @@ class SubWindow(QWidget):
         return fen
 
     # Places pieces at specific position
-    def placePiece(self, piece: str, color: str, pos: tuple) -> None:
-        piecewidget = self.ui.piece_layout.itemAtPosition(pos[1], pos[0]).widget()
-        piecewidget.setPieceInformation(piece, color)
+    def placePiece(self, piece: str, color: str, pos: tuple, tilepos: str) -> None:
+        'Places piece on existing empty widget.'
+        piecewidget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+        piecewidget.setPieceInformation(piece, color, tilepos)
 
     # Converts seconds to MM:SS format
     def convertTime(self, seconds) -> str:
@@ -169,18 +174,29 @@ class SubWindow(QWidget):
         
         return f'{minutes}:{seconds}'
 
-    def convertToPieceLayoutPos(self, f, r, int: bool) -> tuple:
-        files = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8}
-        if not int:
-            file = files[f]
-            rank = int(r)
-        else:
-            file = f
-            rank = r
+    def convertToPieceLayoutPos(self, pos) -> tuple:
+        'Converts square notation position (of either tuple or string) to layout position.'
         flip_digits = {1: 8, 2: 7, 3: 6, 4: 5,
                        5: 4, 6: 3, 7: 2, 8: 1}
-        tile_pos = (flip_digits[file]-1, rank-1)
-        return tile_pos
+        try:
+            flip_digits[pos[0]]
+            if isinstance(pos, tuple):
+                pos = (pos[1], pos[0])
+                pos = (flip_digits[pos[0]], pos[1])
+                pos = (pos[0] - 1, pos[1] - 1)
+                return pos
+            elif isinstance(pos, str):
+                pos = self.convertSquareNotation(pos)
+                pos = (pos[1], pos[0])
+                pos = (flip_digits[pos[0]], pos[1])
+                pos = (pos[0] - 1, pos[1] - 1)
+                return pos
+            else:
+                print(f'convertToPieceLayoutPos() error: {pos}')
+                return None
+        except KeyError as e:
+            print(f'convertToPieceLayoutPos() error: {e}')
+            return None
 
     # Updates timer 1 for timeController
     def update1(self):
@@ -241,8 +257,8 @@ class SubWindow(QWidget):
                     self.active_tile.resetColor()
                     self.active_tile = None
                 return True
-            tile = self.ui.board_layout.itemAtPosition(tile_pos[1], tile_pos[0]).widget()
-            piece = self.ui.piece_layout.itemAtPosition(tile_pos[1], tile_pos[0]).widget()
+            tile = self.ui.board_layout.itemAtPosition(tile_pos[0], tile_pos[1]).widget()
+            piece = self.ui.piece_layout.itemAtPosition(tile_pos[0], tile_pos[1]).widget()
             self.moveInputLogic(tile, piece)
 
     # Executes upon key press
@@ -268,69 +284,178 @@ class SubWindow(QWidget):
 
     # Handles moving and highlighting of pieces
     def moveInputLogic(self, tile, piece):
+        'Moving and highlighting logic called by mousePressEvent().'
         # Resets highlighted tiles after recent move
-            if self.second_active is not None:
+        if self.second_active is not None:
+            if self.active_tile is not None:
+                self.active_tile.resetColor()
+            self.active_tile = None
+            self.active_piece = None
+            self.second_active.resetColor()
+            self.second_active = None
+        # Check if selected piece is the same as the player's colour
+        if piece.pieceInformation()[1] == self.player1_color:
+            # Deselect if the same tile is selected again
+            if self.active_tile == tile:
                 self.active_tile.resetColor()
                 self.active_tile = None
                 self.active_piece = None
-                self.second_active.resetColor()
-                self.second_active = None
-            # Check if selected piece is the same as the player's colour
-            if piece.pieceInformation()[1] == self.player1_color:
-                # Deselect if the same tile is selected again
-                if self.active_tile == tile:
-                    self.active_tile.resetColor()
-                    self.active_tile = None
-                    self.active_piece = None
+            else:
+                # Select new piece
+                if self.active_tile is None:
+                    self.active_tile = tile
+                    self.active_piece = piece
+                    if not self.hide_highlights:
+                        self.active_tile.setStyleSheet(f'background-color: {self.highlight}')
                 else:
-                    # Select new piece
-                    if self.active_tile is None:
-                        self.active_tile = tile
-                        self.active_piece = piece
-                        if not self.hide_highlights:
-                            self.active_tile.setStyleSheet(f'background-color: {self.highlight}')
-                    else:
-                        # Select another piece
-                        self.active_tile.resetColor()
-                        self.active_tile = tile
-                        self.active_piece = piece
-                        if not self.hide_highlights:
-                            self.active_tile.setStyleSheet(f'background-color: {self.highlight}')
-            # Check if selected piece is not the same as the player's colour
-            elif piece.pieceInformation()[1] != self.player1_color:
-                # If a piece is selected, move the piece
-                if self.active_tile is not None:
-                    self.movePiece(self.active_piece, piece)
+                    # Select another piece
+                    self.active_tile.resetColor()
+                    self.active_tile = tile
+                    self.active_piece = piece
+                    if not self.hide_highlights:
+                        self.active_tile.setStyleSheet(f'background-color: {self.highlight}')
+        # Check if selected piece is not the same as the player's colour
+        elif piece.pieceInformation()[1] != self.player1_color:
+            # If a piece is selected, move the piece
+            if self.active_tile is not None:
+                movepiece = self.movePiece(self.active_piece, piece)
+                if movepiece:
                     self.second_active = tile
                     if not self.hide_highlights:
                         self.second_active.setStyleSheet(f'background-color: {self.highlight}')
                         self.active_tile.setStyleSheet(f'background-color: {self.highlight2}')
-            # Deselect tiles
-            else:
-                self.active_tile = None
-                self.active_piece = None
+                else:
+                    self.active_tile.resetColor()
+                    self.active_tile = None
+                    self.active_piece = None
+        # Deselect tiles
+        else:
+            self.active_tile = None
+            self.active_tile.resetColor()
+            self.active_piece = None
 
     # Moves piece
     def movePiece(self, piece, target):
+        'Sets target piece data to the piece that just captured.'
         pieceinfo = piece.pieceInformation()
-        piece.setPieceInformation(None, None)
-        target.setPieceInformation(pieceinfo[0], pieceinfo[1])
-        # Switch active colour
-        if self.active_color == 'w':
-            self.player1_color = 'black'
-            self.active_color = 'b'
+        targetinfo = target.pieceInformation()
+        valid = self.calculateValidSquares(piece)
+        if targetinfo[2] in valid:
+            piece.setPieceInformation(None, None, pieceinfo[2])
+            target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
+            targetinfo = target.pieceInformation()
+            if (targetinfo[0] == 'pawn') and (not target.moved):
+                target.moved = True
+            # Switch active colour
+            if self.active_color == 'w':
+                self.player1_color = 'black'
+                self.active_color = 'b'
+            else:
+                self.player1_color = 'white'
+                self.active_color = 'w'
+            # First move
+            if not self.firstmove:
+                self.timeController()
+                self.firstmove = True
+                return True
+            self.timeSwitch()
+            return True
         else:
-            self.player1_color = 'white'
-            self.active_color = 'w'
-        # First move
-        if not self.firstmove:
-            self.timeController()
-            self.firstmove = True
+            return False
+
+    def getPieceInformationFromPos(self, tuplepos) -> tuple:
+        'Returns data of a piece widget in the format (\'piece\', \'color\', \'a1\').'
+        if (tuplepos[0] > 8 or tuplepos[0] < 1) or (tuplepos[1] > 8 or tuplepos[1] < 1):
+            return (None, None, None)
+        else:
+            pos = self.convertToPieceLayoutPos((tuplepos[0], tuplepos[1]))
+            piece = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+            return piece.pieceInformation()
+
+    # Calculates valid squares for piece to move to
+    def calculateValidSquares(self, piece) -> list:
+        'Calculates valid squares (as tuples) based on the relative position of a piece.'
+        tempvalid = []
+        pieceinfo = piece.pieceInformation()
+        pos: tuple = self.convertSquareNotation(pieceinfo[2])
+        
+        # Valid squares for pawn
+        if pieceinfo[0] == 'pawn':
+            if pieceinfo[1] == 'white':
+                x = 1
+            else:
+                x = -1
+            up = (pos[0], pos[1] + (1*x))
+            two_up = (pos[0], pos[1] + (2*x))
+            left_up = (pos[0] - 1, pos[1] + (1*x))
+            right_up = (pos[0] + 1, pos[1] + (1*x))
+
+            if (not piece.moved) and (not self.checkObstruction(two_up)) and (not self.checkObstruction(up)):
+                tempvalid.append(two_up)
+            if not self.checkObstruction(up):
+                tempvalid.append(up)
+            if self.checkObstruction(left_up):
+                tempvalid.append(left_up)
+            if self.checkObstruction(right_up):
+                tempvalid.append(right_up)
+        
+        # Valid squares for knight
+        if pieceinfo[0] == 'knight':
+            tempvalid.append((pos[0]+1, pos[1]+2))
+            tempvalid.append((pos[0]-1, pos[1]+2))
+            tempvalid.append((pos[0]+1, pos[1]-2))
+            tempvalid.append((pos[0]-1, pos[1]-2))
+            tempvalid.append((pos[0]+2, pos[1]+1))
+            tempvalid.append((pos[0]-2, pos[1]+1))
+            tempvalid.append((pos[0]+2, pos[1]-1))
+            tempvalid.append((pos[0]-2, pos[1]-1))
+
+        # Remove squares outside of board and append to valid list
+        valid = []
+        print(tempvalid)
+        for i in range(len(tempvalid)):
+            try:
+                square = tempvalid[i]
+                print(square)
+                if (square[0] > 8) or (square[1] > 8):
+                    continue
+                elif (square[0] < 1) or (square[1] < 1):
+                    continue
+                else:
+                    valid.append(self.convertSquareNotation(square))
+            except IndexError:
+                continue
+        
+        print(valid)
+        return valid
+                
+    def convertSquareNotation(self, x):
+        'Converts string square notation (ie. a1) to tuple format (ie. 1, 1) and vice versa.'
+        file_ref = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8}
+        reverse_file_ref = dict(map(reversed, file_ref.items()))
+        if isinstance(x, str):
+            return (file_ref[x[0]], int(x[1]))
+        elif isinstance(x, tuple):
+            return reverse_file_ref[x[0]] + str(x[1])
+        else:
             return
-        self.timeSwitch()
+
+    def checkObstruction(self, pos: tuple) -> bool:
+        'Checks for piece at position'
+        pos = self.convertToPieceLayoutPos(pos)
+        if pos is not None:
+            target = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+            targetinfo = target.pieceInformation()
+            if targetinfo[0] is None:
+                return False
+            else:
+                return True
+        else:
+            return True
 
     # Algorithm to find the column and row of the target tile
-    def findTile(self, clickpos):
+    def findTile(self, clickpos: tuple) -> tuple:
+        'Finds the layout position of a tile based on click position.'
         origin = (31,68) # To be changed
         end = (origin[0] + (70 * 8), origin[1] + (70 * 8))
 
@@ -387,6 +512,8 @@ class SubWindow(QWidget):
                 break
 
         # Identify tile file and rank
+        flip_digits = {1: 8, 2: 7, 3: 6, 4: 5,
+                       5: 4, 6: 3, 7: 2, 8: 1}
         f = 8
         r = 1
         for i in range(64):
@@ -398,7 +525,7 @@ class SubWindow(QWidget):
             else:
                 r += 1
 
-        return self.convertToPieceLayoutPos(f, r, True)
+        return self.convertToPieceLayoutPos((flip_digits[f], flip_digits[r]))
     
     def closeWindows(self) -> None:
         for window in self.windowstack:
