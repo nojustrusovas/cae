@@ -192,10 +192,8 @@ class SubWindow(QWidget):
                 pos = (pos[0] - 1, pos[1] - 1)
                 return pos
             else:
-                print(f'convertToPieceLayoutPos() error: {pos}')
                 return None
-        except KeyError as e:
-            print(f'convertToPieceLayoutPos() error: {e}')
+        except KeyError:
             return None
 
     # Updates timer 1 for timeController
@@ -340,6 +338,7 @@ class SubWindow(QWidget):
         pieceinfo = piece.pieceInformation()
         targetinfo = target.pieceInformation()
         valid = self.calculateValidSquares(piece)
+        self.showHints(valid)
         if targetinfo[2] in valid:
             piece.setPieceInformation(None, None, pieceinfo[2])
             target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
@@ -362,6 +361,14 @@ class SubWindow(QWidget):
             return True
         else:
             return False
+
+    def showHints(self, validmoves: list) -> None:
+        'Method to show hints on board'
+        for valid in validmoves:
+            pos = self.convertSquareNotation(valid)
+            pos = self.convertToPieceLayoutPos(pos)
+            widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+            widget.setToHint()
 
     def getPieceInformationFromPos(self, tuplepos) -> tuple:
         'Returns data of a piece widget in the format (\'piece\', \'color\', \'a1\').'
@@ -409,6 +416,37 @@ class SubWindow(QWidget):
             tempvalid.append((pos[0]-2, pos[1]+1))
             tempvalid.append((pos[0]+2, pos[1]-1))
             tempvalid.append((pos[0]-2, pos[1]-1))
+
+        # Valid squares for bishop
+        if pieceinfo[0] == 'bishop':
+            tl_continuous = True
+            tr_continuous = True
+            bl_continuous = True
+            br_continuous = True
+
+            for i in range(1, 7):
+                tl = (pos[0] - (1*i), pos[1] + (1*i))
+                tr = (pos[0] + (1*i), pos[1] + (1*i))
+                bl = (pos[0] - (1*i), pos[1] - (1*i))
+                br = (pos[0] + (1*i), pos[1] - (1*i))
+
+                if tl_continuous:
+                    tempvalid.append(tl)
+                if tr_continuous:
+                    tempvalid.append(tr)
+                if bl_continuous:
+                    tempvalid.append(bl)
+                if br_continuous:
+                    tempvalid.append(br)
+
+                if self.checkObstruction(tl):
+                    tl_continuous = False
+                if self.checkObstruction(tr):
+                    tr_continuous = False
+                if self.checkObstruction(bl):
+                    bl_continuous = False
+                if self.checkObstruction(br):
+                    br_continuous = False
 
         # Remove squares outside of board and append to valid list
         valid = []

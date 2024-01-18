@@ -259,7 +259,16 @@ class Piece(QSvgWidget):
             self.load('main/images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
         else:
             self.load('main/images/none.svg')
+    
+    def setToHint(self) -> None:
+        if self.name is None:
+            self.load('main/images/defaulthint.svg')
+        return
 
+    def removeHint(self) -> None:
+        if self.name is None:
+             self.load('main/images/none.svg')
+        return
 
 class Tile(QWidget):
     def __init__(self):
