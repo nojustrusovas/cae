@@ -329,7 +329,7 @@ class SubWindow(QWidget):
             else:
                 # Select new piece
                 valid = self.calculateValidSquares(piece)
-                self.showHints(valid)
+                self.showHints(valid, piece)
                 if self.active_tile is None:
                     self.active_tile = tile
                     self.active_piece = piece
@@ -339,7 +339,7 @@ class SubWindow(QWidget):
                     # Select another piece
                     self.hideHints()
                     valid = self.calculateValidSquares(piece)
-                    self.showHints(valid)
+                    self.showHints(valid, piece)
                     self.active_tile.resetColor()
                     self.active_tile = tile
                     self.active_piece = piece
@@ -397,21 +397,27 @@ class SubWindow(QWidget):
         else:
             return False
 
-    def showHints(self, validmoves: list) -> None:
+    def showHints(self, validmoves: list, piece) -> None:
         'Method to show hints on board'
         for valid in validmoves:
             pos = self.convertSquareNotation(valid)
             pos = self.convertToPieceLayoutPos(pos)
             widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
-            widget.setToHint()
-            self.hints.append(widget)
+            widget2 = self.ui.hint_layout.itemAtPosition(pos[0], pos[1]).widget()
+            pieceinfo = piece.pieceInformation()
+            widgetinfo = widget.pieceInformation()
+            a = widget.setToHint()
+            if a:
+                self.hints.append(widget)
+            elif pieceinfo[1] != widgetinfo[1]:
+                widget2.showHint()
+                self.hints.append(widget2)
 
     def hideHints(self) -> None:
         'Method to hide all hints on the board'
         for hint in self.hints:
             hint.removeHint()
         self.hints = []
-
 
     def getPieceInformationFromPos(self, tuplepos) -> tuple:
         'Returns data of a piece widget in the format (\'piece\', \'color\', \'a1\').'

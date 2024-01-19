@@ -127,6 +127,14 @@ class UI(object):
         self.piece_layout = QGridLayout(self.board2)
         self.piece_layout.setContentsMargins(0, 0, 0, 0)
         self.piece_layout.setSpacing(7)
+
+        # Hints
+        self.board3 = QWidget(chessboard)
+        self.board3.setObjectName(u'board3')
+        self.board3.setGeometry(QRect(30, 65, 560, 560))
+        self.hint_layout = QGridLayout(self.board3)
+        self.hint_layout.setContentsMargins(0, 0, 0, 0)
+        self.hint_layout.setSpacing(0)
         
         # Right group
         self.groupbox = QGroupBox(chessboard)
@@ -224,6 +232,9 @@ class UI(object):
                 empty = Piece(None, None, file+flip_digits[rank])
                 empty.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
                 self.piece_layout.addWidget(empty, row, col)
+
+                hint = Hint(file+flip_digits[rank], True)
+                self.hint_layout.addWidget(hint, row, col)
 
     def changeTheme(self, light, dark):
         for row, rank in enumerate('12345678'):
@@ -360,15 +371,49 @@ class Piece(QSvgWidget):
         else:
             self.load('main/images/none.svg')
     
-    def setToHint(self) -> None:
+    def setToHint(self) -> bool:
         if self.name is None:
             self.load('main/images/defaulthint.svg')
-        return
+            return True
+        else:
+            return False
 
     def removeHint(self) -> None:
         if self.name is None:
              self.load('main/images/none.svg')
         return
+
+
+class Hint(QSvgWidget):
+    def __init__(self, pos: str, hidden: bool):
+        super().__init__()
+        self.pos = pos
+        self.hidden = hidden
+        self.default = 'defaulthintcapture'
+        if hidden:
+            self.image = 'emptyhint'
+        else:
+            self.image = self.default
+        self.loadHint()
+        self.show()
+
+    def loadHint(self) -> None:
+        self.load(f'main/images/{self.image}.svg')
+
+    def changeDefault(self, default: str) -> None:
+        self.default = default
+    
+    def showHint(self) -> None:
+        if self.hidden:
+            self.image = self.default
+            self.loadHint()
+            self.hidden = False
+
+    def removeHint(self) -> None:
+        if not self.hidden:
+            self.image = 'emptyhint'
+            self.loadHint()
+            self.hidden = True
 
 
 class Tile(QWidget):
