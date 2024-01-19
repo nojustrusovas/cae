@@ -76,19 +76,19 @@ class UI(object):
         self.one.setFont(font4)
         self.one.setStyleSheet('color: #B9C0D6')
         self.one.setText('1')
-        self.one.setGeometry(QRect(580, 550, 30, 30))
+        self.one.setGeometry(QRect(578, 550, 30, 30))
 
         self.two = QLabel(chessboard)
         self.two.setFont(font4)
         self.two.setStyleSheet('color: #E9EDF8')
         self.two.setText('2')
-        self.two.setGeometry(QRect(580, 480, 30, 30))
+        self.two.setGeometry(QRect(578, 480, 30, 30))
 
         self.three = QLabel(chessboard)
         self.three.setFont(font4)
         self.three.setStyleSheet('color: #B9C0D6')
         self.three.setText('3')
-        self.three.setGeometry(QRect(580, 410, 30, 30))
+        self.three.setGeometry(QRect(578, 410, 30, 30))
 
         self.four = QLabel(chessboard)
         self.four.setFont(font4)
@@ -100,25 +100,25 @@ class UI(object):
         self.five.setFont(font4)
         self.five.setStyleSheet('color: #B9C0D6')
         self.five.setText('5')
-        self.five.setGeometry(QRect(580, 270, 30, 30))
+        self.five.setGeometry(QRect(578, 270, 30, 30))
 
         self.six = QLabel(chessboard)
         self.six.setFont(font4)
         self.six.setStyleSheet('color: #E9EDF8')
         self.six.setText('6')
-        self.six.setGeometry(QRect(580, 200, 30, 30))
+        self.six.setGeometry(QRect(578, 200, 30, 30))
 
         self.seven = QLabel(chessboard)
         self.seven.setFont(font4)
         self.seven.setStyleSheet('color: #B9C0D6')
         self.seven.setText('7')
-        self.seven.setGeometry(QRect(580, 130, 30, 30))
+        self.seven.setGeometry(QRect(578, 130, 30, 30))
 
         self.eight = QLabel(chessboard)
         self.eight.setFont(font4)
         self.eight.setStyleSheet('color: #E9EDF8')
         self.eight.setText('8')
-        self.eight.setGeometry(QRect(580, 60, 30, 30))
+        self.eight.setGeometry(QRect(578, 60, 30, 30))
 
         # Chess pieces
         self.board2 = QWidget(chessboard)
@@ -159,10 +159,10 @@ class UI(object):
 
         # Player 1
         font = QFont()
-        font.setPointSize(13)
+        font.setPointSize(15)
         font.setBold(True)
         font2 = QFont()
-        font2.setPointSize(20)
+        font2.setPointSize(24)
         font2.setBold(True)
         font3 = QFont()
         font3.setPointSize(11)
@@ -170,18 +170,18 @@ class UI(object):
 
         self.player1_label = QLabel(chessboard)
         self.player1_label.setText('Player 1')
-        self.player1_label.setGeometry(QRect(30, 640, 58, 16))
+        self.player1_label.setGeometry(QRect(37, 636, 58, 16))
         self.player1_label.setFont(font)
 
         self.player1_time = QLabel(chessboard)
         self.player1_time.setText('00:00')
-        self.player1_time.setGeometry(QRect(540, 640, 61, 20))
+        self.player1_time.setGeometry(QRect(520, 630, 71, 30))
         self.player1_time.setFont(font2)
 
         # Player 2
         self.player2_label = QLabel(chessboard)
         self.player2_label.setText('Player 2')
-        self.player2_label.setGeometry(QRect(30, 30, 58, 16))
+        self.player2_label.setGeometry(QRect(37, 37, 58, 16))
         self.player2_label.setFont(font)
 
         self.engine_sublabel = QLabel(chessboard)
@@ -192,7 +192,7 @@ class UI(object):
 
         self.player2_time = QLabel(chessboard)
         self.player2_time.setText('00:00')
-        self.player2_time.setGeometry(QRect(540, 30, 61, 20))
+        self.player2_time.setGeometry(QRect(520, 30, 71, 30))
         self.player2_time.setFont(font2)
 
         self.drawTiles('#E9EDF8', '#B9C0D6')

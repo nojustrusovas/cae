@@ -40,6 +40,16 @@ class SubWindow(QWidget):
         self.ui.player1_time.setText(self.convertTime(self.clock1))
         self.ui.player2_time.setText(self.convertTime(self.clock2))
         self.importFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+        if self.player1_color == 'white':
+            self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+            self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+            self.ui.player2_label.setStyleSheet('color: #404040')
+            self.ui.player2_time.setStyleSheet('color: #404040')
+        else:
+            self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+            self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+            self.ui.player1_label.setStyleSheet('color: #404040')
+            self.ui.player1_time.setStyleSheet('color: #404040')
 
         self.ui.exit_button.clicked.connect(self.openConfirmation)
         self.ui.settings_button.clicked.connect(self.openPreferences)
@@ -223,9 +233,17 @@ class SubWindow(QWidget):
             if self.player1_color == 'white':
                 self.timer1.start(1000)
                 self.clock1_active = True
+                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_label.setStyleSheet('color: #404040')
+                self.ui.player2_time.setStyleSheet('color: #404040')
             else:
                 self.timer2.start(1000)
                 self.clock2_active = True
+                self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_label.setStyleSheet('color: #404040')
+                self.ui.player1_time.setStyleSheet('color: #404040')
 
     # Switches timers
     def timeSwitch(self) -> None:
@@ -236,6 +254,10 @@ class SubWindow(QWidget):
             self.clock2_active = True
             self.clock1 += 1
             self.ui.player1_time.setText(self.convertTime(self.clock1))
+            self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+            self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+            self.ui.player1_label.setStyleSheet('color: #404040')
+            self.ui.player1_time.setStyleSheet('color: #404040')
         elif self.clock2_active:
             self.timer2.stop()
             self.timer1.start(1000)
@@ -243,6 +265,10 @@ class SubWindow(QWidget):
             self.clock2_active = False
             self.clock2 += 1
             self.ui.player2_time.setText(self.convertTime(self.clock2))
+            self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+            self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+            self.ui.player2_label.setStyleSheet('color: #404040')
+            self.ui.player2_time.setStyleSheet('color: #404040')
         else:
             return
 
