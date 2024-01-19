@@ -30,6 +30,7 @@ class SubWindow(QWidget):
         self.second_active: bool = None
         self.player1_color: str = 'white'
         self.hide_highlights = False
+        self.hints = []
 
         self.render()
 
@@ -293,13 +294,16 @@ class SubWindow(QWidget):
             self.second_active = None
         # Check if selected piece is the same as the player's colour
         if piece.pieceInformation()[1] == self.player1_color:
-            # Deselect if the same tile is selected again
             if self.active_tile == tile:
+                # Deselect if the same tile is selected again
+                self.hideHints()
                 self.active_tile.resetColor()
                 self.active_tile = None
                 self.active_piece = None
             else:
                 # Select new piece
+                valid = self.calculateValidSquares(piece)
+                self.showHints(valid)
                 if self.active_tile is None:
                     self.active_tile = tile
                     self.active_piece = piece
@@ -307,6 +311,9 @@ class SubWindow(QWidget):
                         self.active_tile.setStyleSheet(f'background-color: {self.highlight}')
                 else:
                     # Select another piece
+                    self.hideHints()
+                    valid = self.calculateValidSquares(piece)
+                    self.showHints(valid)
                     self.active_tile.resetColor()
                     self.active_tile = tile
                     self.active_piece = piece
@@ -323,11 +330,13 @@ class SubWindow(QWidget):
                         self.second_active.setStyleSheet(f'background-color: {self.highlight}')
                         self.active_tile.setStyleSheet(f'background-color: {self.highlight2}')
                 else:
+                    self.hideHints()
                     self.active_tile.resetColor()
                     self.active_tile = None
                     self.active_piece = None
         # Deselect tiles
         else:
+            self.hideHints()
             self.active_tile = None
             self.active_tile.resetColor()
             self.active_piece = None
@@ -338,8 +347,8 @@ class SubWindow(QWidget):
         pieceinfo = piece.pieceInformation()
         targetinfo = target.pieceInformation()
         valid = self.calculateValidSquares(piece)
-        self.showHints(valid)
         if targetinfo[2] in valid:
+            self.hideHints()
             piece.setPieceInformation(None, None, pieceinfo[2])
             target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
             targetinfo = target.pieceInformation()
@@ -369,6 +378,14 @@ class SubWindow(QWidget):
             pos = self.convertToPieceLayoutPos(pos)
             widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
             widget.setToHint()
+            self.hints.append(widget)
+
+    def hideHints(self) -> None:
+        'Method to hide all hints on the board'
+        for hint in self.hints:
+            hint.removeHint()
+        self.hints = []
+
 
     def getPieceInformationFromPos(self, tuplepos) -> tuple:
         'Returns data of a piece widget in the format (\'piece\', \'color\', \'a1\').'
@@ -450,11 +467,9 @@ class SubWindow(QWidget):
 
         # Remove squares outside of board and append to valid list
         valid = []
-        print(tempvalid)
         for i in range(len(tempvalid)):
             try:
                 square = tempvalid[i]
-                print(square)
                 if (square[0] > 8) or (square[1] > 8):
                     continue
                 elif (square[0] < 1) or (square[1] < 1):
@@ -464,7 +479,6 @@ class SubWindow(QWidget):
             except IndexError:
                 continue
         
-        print(valid)
         return valid
                 
     def convertSquareNotation(self, x):
