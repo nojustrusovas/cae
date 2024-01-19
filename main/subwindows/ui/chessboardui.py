@@ -20,6 +20,106 @@ class UI(object):
         self.board_layout.setContentsMargins(0, 0, 0, 0)
         self.board_layout.setSpacing(0)
 
+        # File and rank labels
+        font4 = QFont()
+        font4.setBold(True)
+        font4.setPointSize(15)
+        self.a = QLabel(chessboard)
+        self.a.setFont(font4)
+        self.a.setStyleSheet('color: #E9EDF8')
+        self.a.setText('a')
+        self.a.setGeometry(QRect(34, 600, 30, 30))
+
+        self.b = QLabel(chessboard)
+        self.b.setFont(font4)
+        self.b.setStyleSheet('color: #B9C0D6')
+        self.b.setText('b')
+        self.b.setGeometry(QRect(104, 600, 30, 30))
+        
+        self.c = QLabel(chessboard)
+        self.c.setFont(font4)
+        self.c.setStyleSheet('color: #E9EDF8')
+        self.c.setText('c')
+        self.c.setGeometry(QRect(174, 600, 30, 30))
+
+        self.d = QLabel(chessboard)
+        self.d.setFont(font4)
+        self.d.setStyleSheet('color: #B9C0D6')
+        self.d.setText('d')
+        self.d.setGeometry(QRect(244, 600, 30, 30))
+
+        self.e = QLabel(chessboard)
+        self.e.setFont(font4)
+        self.e.setStyleSheet('color: #E9EDF8')
+        self.e.setText('e')
+        self.e.setGeometry(QRect(314, 600, 30, 30))
+
+        self.f = QLabel(chessboard)
+        self.f.setFont(font4)
+        self.f.setStyleSheet('color: #B9C0D6')
+        self.f.setText('f')
+        self.f.setGeometry(QRect(384, 600, 30, 30))
+
+        self.g = QLabel(chessboard)
+        self.g.setFont(font4)
+        self.g.setStyleSheet('color: #E9EDF8')
+        self.g.setText('g')
+        self.g.setGeometry(QRect(454, 600, 30, 30))
+
+        self.h = QLabel(chessboard)
+        self.h.setFont(font4)
+        self.h.setStyleSheet('color: #B9C0D6')
+        self.h.setText('h')
+        self.h.setGeometry(QRect(524, 600, 30, 30))
+
+        self.one = QLabel(chessboard)
+        self.one.setFont(font4)
+        self.one.setStyleSheet('color: #B9C0D6')
+        self.one.setText('1')
+        self.one.setGeometry(QRect(580, 550, 30, 30))
+
+        self.two = QLabel(chessboard)
+        self.two.setFont(font4)
+        self.two.setStyleSheet('color: #E9EDF8')
+        self.two.setText('2')
+        self.two.setGeometry(QRect(580, 480, 30, 30))
+
+        self.three = QLabel(chessboard)
+        self.three.setFont(font4)
+        self.three.setStyleSheet('color: #B9C0D6')
+        self.three.setText('3')
+        self.three.setGeometry(QRect(580, 410, 30, 30))
+
+        self.four = QLabel(chessboard)
+        self.four.setFont(font4)
+        self.four.setStyleSheet('color: #E9EDF8')
+        self.four.setText('4')
+        self.four.setGeometry(QRect(580, 340, 30, 30))
+
+        self.five = QLabel(chessboard)
+        self.five.setFont(font4)
+        self.five.setStyleSheet('color: #B9C0D6')
+        self.five.setText('5')
+        self.five.setGeometry(QRect(580, 270, 30, 30))
+
+        self.six = QLabel(chessboard)
+        self.six.setFont(font4)
+        self.six.setStyleSheet('color: #E9EDF8')
+        self.six.setText('6')
+        self.six.setGeometry(QRect(580, 200, 30, 30))
+
+        self.seven = QLabel(chessboard)
+        self.seven.setFont(font4)
+        self.seven.setStyleSheet('color: #B9C0D6')
+        self.seven.setText('7')
+        self.seven.setGeometry(QRect(580, 130, 30, 30))
+
+        self.eight = QLabel(chessboard)
+        self.eight.setFont(font4)
+        self.eight.setStyleSheet('color: #E9EDF8')
+        self.eight.setText('8')
+        self.eight.setGeometry(QRect(580, 60, 30, 30))
+
         # Chess pieces
         self.board2 = QWidget(chessboard)
         self.board2.setObjectName(u'board2')
@@ -269,6 +369,7 @@ class Piece(QSvgWidget):
         if self.name is None:
              self.load('main/images/none.svg')
         return
+
 
 class Tile(QWidget):
     def __init__(self):
