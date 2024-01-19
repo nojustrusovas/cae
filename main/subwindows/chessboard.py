@@ -32,6 +32,8 @@ class SubWindow(QWidget):
         self.player1_color: str = 'white'
         self.hide_highlights = False
         self.hints = []
+        self.kingpos: dict = {'white': None, 'black': None}
+        self.check = None
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -175,6 +177,11 @@ class SubWindow(QWidget):
         'Places piece on existing empty widget.'
         piecewidget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
         piecewidget.setPieceInformation(piece, color, tilepos)
+        pieceinfo = piecewidget.pieceInformation()
+        if (pieceinfo[0] == 'king') and (pieceinfo[1] == 'white'):
+            self.kingpos['white'] = pieceinfo[2]
+        elif (pieceinfo[0] == 'king') and (pieceinfo[1] == 'black'):
+            self.kingpos['black'] = pieceinfo[2]
 
     # Converts seconds to MM:SS format
     def convertTime(self, seconds) -> str:
@@ -198,13 +205,13 @@ class SubWindow(QWidget):
                        5: 4, 6: 3, 7: 2, 8: 1}
         try:
             flip_digits[pos[0]]
-            if isinstance(pos, tuple):
+            if isinstance(pos, str):
+                pos = self.convertSquareNotation(pos)
                 pos = (pos[1], pos[0])
                 pos = (flip_digits[pos[0]], pos[1])
                 pos = (pos[0] - 1, pos[1] - 1)
                 return pos
-            elif isinstance(pos, str):
-                pos = self.convertSquareNotation(pos)
+            elif isinstance(pos, tuple):
                 pos = (pos[1], pos[0])
                 pos = (flip_digits[pos[0]], pos[1])
                 pos = (pos[0] - 1, pos[1] - 1)
@@ -409,6 +416,10 @@ class SubWindow(QWidget):
             return True
         else:
             return False
+
+    # Method to prevent self-checking moves
+    def moveCheckValidate(self) -> bool:
+        'Return a boolean stating whether the move would lead to a check.'
 
     def showHints(self, validmoves: list, piece) -> None:
         'Method to show hints on board'
