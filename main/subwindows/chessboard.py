@@ -287,6 +287,7 @@ class SubWindow(QWidget):
             if tile_pos is None:
                 if self.active_tile is not None:
                     self.active_tile.resetColor()
+                    self.hideHints()
                     self.active_tile = None
                 return True
             tile = self.ui.board_layout.itemAtPosition(tile_pos[0], tile_pos[1]).widget()
@@ -478,8 +479,8 @@ class SubWindow(QWidget):
             tempvalid.append((pos[0]+2, pos[1]-1))
             tempvalid.append((pos[0]-2, pos[1]-1))
 
-        # Valid squares for bishop
-        if pieceinfo[0] == 'bishop':
+        # Valid squares for bishop or queen
+        if (pieceinfo[0] == 'bishop') or (pieceinfo[0] == 'queen'):
             tl_continuous = True
             tr_continuous = True
             bl_continuous = True
@@ -508,6 +509,48 @@ class SubWindow(QWidget):
                     bl_continuous = False
                 if self.checkObstruction(br):
                     br_continuous = False
+
+        # Valid squares for rook or queen
+        if (pieceinfo[0] == 'rook') or (pieceinfo[0] == 'queen'):
+            up_continuous = True
+            down_continuous = True
+            left_continuous = True
+            right_continuous = True
+
+            for i in range(1, 7):
+                up = (pos[0], pos[1] + (1*i))
+                down = (pos[0], pos[1] - (1*i))
+                left = (pos[0] - (1*i), pos[1])
+                right = (pos[0] + (1*i), pos[1])
+
+                if up_continuous:
+                    tempvalid.append(up)
+                if down_continuous:
+                    tempvalid.append(down)
+                if left_continuous:
+                    tempvalid.append(left)
+                if right_continuous:
+                    tempvalid.append(right)
+
+                if self.checkObstruction(up):
+                    up_continuous = False
+                if self.checkObstruction(down):
+                    down_continuous = False
+                if self.checkObstruction(left):
+                    left_continuous = False
+                if self.checkObstruction(right):
+                    right_continuous = False
+
+         # Valid squares for king
+        if pieceinfo[0] == 'king':
+            tempvalid.append((pos[0]+1, pos[1]))
+            tempvalid.append((pos[0]-1, pos[1]))
+            tempvalid.append((pos[0]+1, pos[1]+1))
+            tempvalid.append((pos[0]+1, pos[1]-1))
+            tempvalid.append((pos[0]-1, pos[1]+1))
+            tempvalid.append((pos[0]-1, pos[1]-1))
+            tempvalid.append((pos[0], pos[1]+1))
+            tempvalid.append((pos[0], pos[1]-1))
 
         # Remove squares outside of board and append to valid list
         valid = []
