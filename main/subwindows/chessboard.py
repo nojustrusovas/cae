@@ -1,7 +1,8 @@
 # main/subwindows/chessboard.py
 
 from PySide6.QtWidgets import QWidget, QMainWindow
-from PySide6.QtCore import QTimer, Qt
+from PySide6.QtMultimedia import QSoundEffect
+from PySide6.QtCore import QTimer, Qt, QUrl
 from PySide6.QtGui import QCloseEvent, QKeyEvent
 from subwindows.ui import chessboardui
 from math import floor
@@ -31,6 +32,12 @@ class SubWindow(QWidget):
         self.player1_color: str = 'white'
         self.hide_highlights = False
         self.hints = []
+
+        # Sound variables
+        self.s_move = QSoundEffect()
+        self.s_move.setSource(QUrl.fromLocalFile("main/audio/move-self.wav"))
+        self.s_capture = QSoundEffect()
+        self.s_capture.setSource(QUrl.fromLocalFile("main/audio/capture.wav"))
 
         self.render()
 
@@ -374,6 +381,11 @@ class SubWindow(QWidget):
         targetinfo = target.pieceInformation()
         valid = self.calculateValidSquares(piece)
         if targetinfo[2] in valid:
+            # Sound
+            if targetinfo[0] is None:
+                self.s_move.play()
+            else:
+                self.s_capture.play()
             self.hideHints()
             piece.setPieceInformation(None, None, pieceinfo[2])
             target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
