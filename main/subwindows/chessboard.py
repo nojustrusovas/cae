@@ -34,7 +34,7 @@ class SubWindow(QWidget):
         self.hints = []
         self.kingpos: dict = {'white': None, 'black': None}
         self.check = False
-        self.check_tile = None
+        self.check_tile = (None, None)
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -399,9 +399,10 @@ class SubWindow(QWidget):
         pos = self.convertSquareNotation(pos)
         pos = self.convertToPieceLayoutPos(pos)
         tile = self.ui.board_layout.itemAtPosition(pos[0], pos[1]).widget()
-        tile.setStyleSheet('background-color: #FF3838')
+        self.check_tile = (tile, tile.defaultColor())
+        self.check_tile[0].setDefaultColor('#FF3838')
+        self.check_tile[0].resetColor()
         self.s_check.play()
-        self.check_tile = tile
 
     # Moves piece
     def movePiece(self, piece, target) -> None:
@@ -425,8 +426,9 @@ class SubWindow(QWidget):
             # Check highlight
             possiblechecks = self.calculateValidSquares(target)
             oppositeking = flip[targetinfo[1]]
-            if (self.check is True) and (targetinfo[0] != 'king'):
-                self.check_tile.resetColor()
+            if self.check is True:
+                self.check_tile[0].setDefaultColor(self.check_tile[1])
+                self.check_tile[0].resetColor()
             if self.kingpos[oppositeking] in possiblechecks:
                 self.check = True
                 self.checkFunc(flip[targetinfo[1]])
@@ -493,7 +495,6 @@ class SubWindow(QWidget):
             target.setPieceInformation(tempstore2[0], tempstore2[1], tempstore2[2])
             self.kingpos['white'] = originalkingpos['white']
             self.kingpos['black'] = originalkingpos['black']
-            print(self.kingpos)
 
         if invalid:
             for move in tempvalid:
