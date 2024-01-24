@@ -18,6 +18,7 @@ class SubWindow(QWidget):
         self.preferenceswindow = PreferencesWindow(self)
 
         # Board variables
+        self.occupied: bool = False
         self.firstmove: bool = False
         self.movelogflag: bool = False
         self.clock1: int = 75
@@ -36,6 +37,7 @@ class SubWindow(QWidget):
         self.check = False
         self.check_tile = (None, None)
         self.enpassant_color = None
+        self.pawn_promote = None
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -46,6 +48,8 @@ class SubWindow(QWidget):
         self.s_check.setSource(QUrl.fromLocalFile("main/audio/move-check.wav"))
         self.s_castle = QSoundEffect()
         self.s_castle.setSource(QUrl.fromLocalFile("main/audio/castle.wav"))
+        self.s_promote = QSoundEffect()
+        self.s_promote.setSource(QUrl.fromLocalFile("main/audio/promote.wav"))
 
         self.render()
 
@@ -90,6 +94,15 @@ class SubWindow(QWidget):
     def refresh(self) -> None:
         self.parent.setFixedSize(1000, 700)
         self.parent.setWindowTitle('Chessboard')
+
+    def pawnPromoteRequest(self, piecename) -> None:
+        pawninfo = self.pawn_promote.pieceInformation()
+        self.pawn_promote.setPieceInformation(piecename, pawninfo[1], pawninfo[2])
+        self.pawn_promote.pieceShow()
+        self.ui.pawnPromotion(pawninfo[2])
+        self.s_promote.play()
+        self.occupied = False
+        self.pawn_promote = None
 
     def returnKingPosition(self) -> dict:
         x = self.kingpos
@@ -442,6 +455,9 @@ class SubWindow(QWidget):
     # Handles moving and highlighting of pieces
     def moveInputLogic(self, tile, piece) -> None:
         'Moving and highlighting logic called by mousePressEvent().'
+        if self.occupied:
+            return
+        
         # Resets highlighted tiles after recent move
         if self.second_active is not None:
             if self.active_tile is not None:
@@ -603,6 +619,12 @@ class SubWindow(QWidget):
                 else:
                     self.enpassant_square = '-'    
                     self.enpassant_color = None   
+                # Pawn promotion
+                pawnrank = self.convertSquareNotation(targetinfo[2])[1]
+                if (targetinfo[1] == 'white') and (pawnrank == 8):
+                    self.showPawnPromotion(target, 'white')
+                elif (targetinfo[1] == 'black') and (pawnrank == 1):
+                    self.showPawnPromotion(target, 'black')
             if targetinfo[0] == 'king':
                 target.moved = True
             # Check highlight
@@ -709,6 +731,11 @@ class SubWindow(QWidget):
         for hint in self.hints:
             hint.removeHint()
         self.hints = []
+
+    def showPawnPromotion(self, pawn, color) -> None:
+        self.occupied = True
+        self.ui.pawnPromotion(color)
+        self.pawn_promote = pawn
 
     def getPieceInformationFromPos(self, tuplepos) -> tuple:
         'Returns data of a piece widget in the format (\'piece\', \'color\', \'a1\').'

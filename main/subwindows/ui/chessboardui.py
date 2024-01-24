@@ -1,6 +1,6 @@
 # main/subwindows/ui/chessboardui.py
 
-from PySide6.QtWidgets import QWidget, QGridLayout, QGroupBox, QPushButton, QLabel, QScrollArea, QVBoxLayout, QStyleOption, QStyle, QComboBox, QCheckBox
+from PySide6.QtWidgets import QWidget, QGridLayout, QGroupBox, QPushButton, QLabel, QScrollArea, QVBoxLayout, QStyleOption, QStyle, QComboBox, QCheckBox, QHBoxLayout
 from PySide6.QtGui import QFont, QPaintEvent, QPainter
 from PySide6.QtCore import Qt, QRect, QMetaObject, QCoreApplication
 from PySide6.QtSvgWidgets import QSvgWidget
@@ -8,9 +8,11 @@ from PySide6.QtSvgWidgets import QSvgWidget
 
 class UI(object):
     def initUI(self, chessboard):
+        self.parent = chessboard
         if not chessboard.objectName():
             chessboard.setObjectName(u'chessboard')
         chessboard.resize(1000, 700)
+        self.pawnpromote = False
 
         # Chessboard
         self.board = QWidget(chessboard)
@@ -203,6 +205,41 @@ class UI(object):
         self.player2_time.setGeometry(QRect(520, 30, 71, 30))
         self.player2_time.setFont(font2)
 
+        # Pawn promotion widget
+        self.pawn_promote_widget = QWidget(chessboard)
+        self.pawn_promote_widget.setGeometry(QRect(155, 300, 311, 91))
+        self.pawn_promote_widget.setStyleSheet('QWidget {\n	background-color: rgba(0, 0, 0, 140);\n	border-radius: 15px;\n}')
+
+            # Layout
+        self.horizontal_layout_widget = QWidget(self.pawn_promote_widget)
+        self.horizontal_layout_widget.setGeometry(QRect(10, 10, 291, 71))
+        self.horizontal_layout_widget.setStyleSheet('background-color: rgba(0, 0, 0, 0)')
+        self.horizontal_layout = QHBoxLayout(self.horizontal_layout_widget)
+        self.horizontal_layout.setSpacing(20)
+        self.horizontal_layout.setContentsMargins(15, 11, 15, 11)
+
+            # Pieces
+        self.knightpiece = Piece('knight', 'white', None, self)
+        self.knightpiece.ui_only = True
+        self.horizontal_layout.addWidget(self.knightpiece)
+        self.knightpiece.setStyleSheet('QWidget:hover {\n	background-color: rgba(255, 255, 255, 80);\n	border-radius: 15px;\n}')
+
+        self.bishoppiece = Piece('bishop', 'white', None, self)
+        self.bishoppiece.ui_only = True
+        self.horizontal_layout.addWidget(self.bishoppiece)
+        self.bishoppiece.setStyleSheet('QWidget:hover {\n	background-color: rgba(255, 255, 255, 80);\n	border-radius: 15px;\n}')
+
+        self.rookpiece = Piece('rook', 'white', None, self)
+        self.rookpiece.ui_only = True
+        self.horizontal_layout.addWidget(self.rookpiece)
+        self.rookpiece.setStyleSheet('QWidget:hover {\n	background-color: rgba(255, 255, 255, 80);\n	border-radius: 15px;\n}')
+
+        self.queenpiece = Piece('queen', 'white', None, self)
+        self.queenpiece.ui_only = True
+        self.horizontal_layout.addWidget(self.queenpiece)
+        self.queenpiece.setStyleSheet('QWidget:hover {\n	background-color: rgba(255, 255, 255, 80);\n	border-radius: 15px;\n}')
+        self.pawn_promote_widget.hide()
+
         self.drawTiles('#E9EDF8', '#B9C0D6')
 
     # Draw tiles and add to grid
@@ -228,14 +265,14 @@ class UI(object):
 
                 self.board_layout.addWidget(tile, row, col)
 
-                empty = Piece(None, None, file+flip_digits[rank])
+                empty = Piece(None, None, file+flip_digits[rank], self)
                 empty.setFixedSize(self.tile_size[0] - 14, self.tile_size[1] - 14)
                 self.piece_layout.addWidget(empty, row, col)
 
                 hint = Hint(file+flip_digits[rank], True)
                 self.hint_layout.addWidget(hint, row, col)
 
-    def changeTheme(self, light, dark):
+    def changeTheme(self, light, dark) -> None:
         for row, rank in enumerate('12345678'):
             for col, file in enumerate('abcdefgh'):
                 tile = self.board_layout.itemAtPosition(row, col).widget()
@@ -245,6 +282,22 @@ class UI(object):
                 else:
                     tile.setDefaultColor(dark)
                     tile.resetColor()
+
+    def pawnPromotion(self, piececolor) -> None:
+        if self.pawnpromote is False:
+            self.pawnpromote = True
+            self.knightpiece.setPieceInformation('knight', piececolor, None)
+            self.bishoppiece.setPieceInformation('bishop', piececolor, None)
+            self.rookpiece.setPieceInformation('rook', piececolor, None)
+            self.queenpiece.setPieceInformation('queen', piececolor, None)
+            self.knightpiece.pieceShow()
+            self.bishoppiece.pieceShow()
+            self.rookpiece.pieceShow()
+            self.queenpiece.pieceShow()
+            self.pawn_promote_widget.show()
+        else:
+            self.pawn_promote_widget.hide()
+            self.pawnpromote = False
 
 
 class UI_ConfirmWindow(object):
@@ -350,21 +403,27 @@ class UI_PreferencesWindow(object):
 
 
 class Piece(QSvgWidget):
-    def __init__(self, name: str, color: str, pos: str):
+    def __init__(self, name: str, color: str, pos: str, parent):
         super().__init__()
+        self.parent = parent
         self.name = name
         self.color = color
         self.pos = pos
         self.moved = False
         self.castlemoves = []
         self.two_moved = False
+        self.ui_only = False
         self.pieceShow()
+    
+    def mousePressEvent(self, event):
+        if (self.ui_only) and (self.parent.pawnpromote is True):
+            self.parent.parent.pawnPromoteRequest(self.name)
 
     def pieceInformation(self) -> tuple:
         return (self.name, self.color, self.pos)
     
-    def setPieceInformation(self, name: str, color: str, pos: str):
-        self.name = name
+    def setPieceInformation(self, piecename: str, color: str, pos: str):
+        self.name = piecename
         self.color = color
         self.pos = pos
 
