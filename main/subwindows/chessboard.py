@@ -1,4 +1,5 @@
 # main/subwindows/chessboard.py
+# TODO: rewrite all validation to use a 3D array
 
 from PySide6.QtWidgets import QWidget, QMainWindow
 from PySide6.QtMultimedia import QSoundEffect
@@ -33,13 +34,16 @@ class SubWindow(QWidget):
         self.hide_highlights = False
         self.hints = []
         self.kingpos: dict = {'white': None, 'black': None}
-        self.check = None
+        self.check = False
+        self.check_tile = None
 
         # Sound variables
         self.s_move = QSoundEffect()
         self.s_move.setSource(QUrl.fromLocalFile("main/audio/move-self.wav"))
         self.s_capture = QSoundEffect()
         self.s_capture.setSource(QUrl.fromLocalFile("main/audio/capture.wav"))
+        self.s_check = QSoundEffect()
+        self.s_check.setSource(QUrl.fromLocalFile("main/audio/move-check.wav"))
 
         self.render()
 
@@ -49,6 +53,7 @@ class SubWindow(QWidget):
         self.ui.player1_time.setText(self.convertTime(self.clock1))
         self.ui.player2_time.setText(self.convertTime(self.clock2))
         self.importFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+
         if self.player1_color == 'white':
             self.ui.player1_label.setStyleSheet('color: #FFFFFF')
             self.ui.player1_time.setStyleSheet('color: #FFFFFF')
@@ -84,6 +89,10 @@ class SubWindow(QWidget):
         self.parent.setFixedSize(1000, 700)
         self.parent.setWindowTitle('Chessboard')
 
+    def returnKingPosition(self) -> dict:
+        x = self.kingpos
+        return x
+
     # Imports FEN string
     def importFEN(self, fen: str) -> None:
         # Splits fen string into sections and sets variables
@@ -113,7 +122,7 @@ class SubWindow(QWidget):
                 file += int(piece)
             elif piece.lower() in piece_ref:
                 pos = self.convertToPieceLayoutPos((flip_digits[file], flip_digits[rank]))
-                tilepos = self.convertSquareNotation((file,rank))
+                tilepos = self.convertSquareNotation((flip_digits[file], flip_digits[rank]))
                 if piece.isupper():
                     self.placePiece(piece_ref[piece.lower()], 'black', pos, tilepos)
                 else:
@@ -177,12 +186,15 @@ class SubWindow(QWidget):
         'Places piece on existing empty widget.'
         piecewidget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
         piecewidget.setPieceInformation(piece, color, tilepos)
+        piecewidget.pieceShow()
+
+        # Update kingpos
         pieceinfo = piecewidget.pieceInformation()
         if (pieceinfo[0] == 'king') and (pieceinfo[1] == 'white'):
             self.kingpos['white'] = pieceinfo[2]
         elif (pieceinfo[0] == 'king') and (pieceinfo[1] == 'black'):
             self.kingpos['black'] = pieceinfo[2]
-
+        
     # Converts seconds to MM:SS format
     def convertTime(self, seconds) -> str:
         decimal = seconds / 60
@@ -323,7 +335,7 @@ class SubWindow(QWidget):
                 self.movelogflag = False
 
     # Handles moving and highlighting of pieces
-    def moveInputLogic(self, tile, piece):
+    def moveInputLogic(self, tile, piece) -> None:
         'Moving and highlighting logic called by mousePressEvent().'
         # Resets highlighted tiles after recent move
         if self.second_active is not None:
@@ -343,7 +355,7 @@ class SubWindow(QWidget):
                 self.active_piece = None
             else:
                 # Select new piece
-                valid = self.calculateValidSquares(piece)
+                valid = self.calculateValidMoves(piece)
                 self.showHints(valid, piece)
                 if self.active_tile is None:
                     self.active_tile = tile
@@ -353,7 +365,7 @@ class SubWindow(QWidget):
                 else:
                     # Select another piece
                     self.hideHints()
-                    valid = self.calculateValidSquares(piece)
+                    valid = self.calculateValidMoves(piece)
                     self.showHints(valid, piece)
                     self.active_tile.resetColor()
                     self.active_tile = tile
@@ -382,12 +394,23 @@ class SubWindow(QWidget):
             self.active_tile.resetColor()
             self.active_piece = None
 
+    def checkFunc(self, kingcolor) -> None:
+        'Code to run during an active check'
+        pos = self.kingpos[kingcolor]
+        pos = self.convertSquareNotation(pos)
+        pos = self.convertToPieceLayoutPos(pos)
+        tile = self.ui.board_layout.itemAtPosition(pos[0], pos[1]).widget()
+        tile.setStyleSheet('background-color: #FF3838')
+        self.s_check.play()
+        self.check_tile = tile
+
     # Moves piece
-    def movePiece(self, piece, target):
+    def movePiece(self, piece, target) -> None:
         'Sets target piece data to the piece that just captured.'
+        flip = {'white': 'black', 'black': 'white'}
         pieceinfo = piece.pieceInformation()
         targetinfo = target.pieceInformation()
-        valid = self.calculateValidSquares(piece)
+        valid = self.calculateValidMoves(piece)
         if targetinfo[2] in valid:
             # Sound
             if targetinfo[0] is None:
@@ -397,9 +420,21 @@ class SubWindow(QWidget):
             self.hideHints()
             piece.setPieceInformation(None, None, pieceinfo[2])
             target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
+            piece.pieceShow()
+            target.pieceShow()
             targetinfo = target.pieceInformation()
+            # Check highlight
+            possiblechecks = self.calculateValidSquares(target)
+            oppositeking = flip[targetinfo[1]]
+            if (self.check is True) and (targetinfo[0] != 'king'):
+                self.check_tile.resetColor()
+            if self.kingpos[oppositeking] in possiblechecks:
+                self.check = True
+                self.checkFunc(flip[targetinfo[1]])
             if (targetinfo[0] == 'pawn') and (not target.moved):
                 target.moved = True
+            if targetinfo[0] == 'king':
+                self.kingpos[targetinfo[1]] = targetinfo[2]
             # Switch active colour
             if self.active_color == 'w':
                 self.player1_color = 'black'
@@ -417,10 +452,60 @@ class SubWindow(QWidget):
         else:
             return False
 
-    # Method to prevent self-checking moves
-    def moveCheckValidate(self) -> bool:
-        'Return a boolean stating whether the move would lead to a check.'
+    def calculateValidMoves(self, piece) -> list:
+        'Returns a list of valid moves after check and move validation'
+        pieceinfo = piece.pieceInformation()
+        tempvalid = self.calculateValidSquares(piece)
+        originalkingpos = {'white': None, 'black': None}
+        originalkingpos['white'] = self.kingpos['white']
+        originalkingpos['black'] = self.kingpos['black']
+        invalid = []
+        valid = []
+        for move in tempvalid:
+            # Set target square / piece
+            pos = self.convertSquareNotation(move)
+            pos = self.convertToPieceLayoutPos(pos)
+            target = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+            targetinfo = target.pieceInformation()
 
+            # Do the move
+            tempstore1 = piece.pieceInformation()
+            tempstore2 = targetinfo
+            if pieceinfo[0] == 'king':
+                self.kingpos[pieceinfo[1]] = move
+            piece.setPieceInformation(None, None, pieceinfo[2])
+            target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
+
+            # Identify check
+            flip = {'white': 'black', 'black': 'white'}
+            for i in range(64):
+                widget = self.ui.piece_layout.itemAt(i).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[1] == flip[pieceinfo[1]]:
+                    checksquares = self.calculateValidSquares(widget)
+                    if self.kingpos[pieceinfo[1]] in checksquares:
+                        invalid.append(move)
+                        break
+                else:
+                    continue
+                
+            # Reset move
+            piece.setPieceInformation(tempstore1[0], tempstore1[1], tempstore1[2])
+            target.setPieceInformation(tempstore2[0], tempstore2[1], tempstore2[2])
+            self.kingpos['white'] = originalkingpos['white']
+            self.kingpos['black'] = originalkingpos['black']
+            print(self.kingpos)
+
+        if invalid:
+            for move in tempvalid:
+                if move in invalid:
+                    continue
+                else:
+                    valid.append(move)
+            return valid
+        else:
+            return tempvalid
+            
     def showHints(self, validmoves: list, piece) -> None:
         'Method to show hints on board'
         for valid in validmoves:
@@ -454,7 +539,7 @@ class SubWindow(QWidget):
 
     # Calculates valid squares for piece to move to
     def calculateValidSquares(self, piece) -> list:
-        'Calculates valid squares (as tuples) based on the relative position of a piece.'
+        'Calculates valid squares (as square notation) based on the relative position of a piece.'
         tempvalid = []
         pieceinfo = piece.pieceInformation()
         pos: tuple = self.convertSquareNotation(pieceinfo[2])
@@ -680,7 +765,7 @@ class SubWindow(QWidget):
     def closeWindows(self) -> None:
         for window in self.windowstack:
             window.close()
-    
+
 
 class ConfirmWindow(QMainWindow):
     def __init__(self, parent):

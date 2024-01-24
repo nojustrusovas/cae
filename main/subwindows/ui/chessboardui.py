@@ -205,7 +205,6 @@ class UI(object):
 
         self.drawTiles('#E9EDF8', '#B9C0D6')
 
-
     # Draw tiles and add to grid
     def drawTiles(self, col1, col2) -> None:
         self.col1 = col1 # Assign light tile colour as hex string
@@ -357,8 +356,7 @@ class Piece(QSvgWidget):
         self.color = color
         self.pos = pos
         self.moved = False
-        if name is not None:
-            self.load('main/images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
+        self.pieceShow()
 
     def pieceInformation(self) -> tuple:
         return (self.name, self.color, self.pos)
@@ -366,10 +364,16 @@ class Piece(QSvgWidget):
     def setPieceInformation(self, name: str, color: str, pos: str):
         self.name = name
         self.color = color
-        if name is not None:
+        self.pos = pos
+
+    def pieceShow(self) -> None:
+        if self.name is not None:
             self.load('main/images/{}{}.svg'.format(self.color.lower(), self.name.lower()))
         else:
             self.load('main/images/none.svg')
+    
+    def pieceHide(self) -> None:
+        self.load('main/images/none.svg')
     
     def setToHint(self) -> bool:
         if self.name is None:
