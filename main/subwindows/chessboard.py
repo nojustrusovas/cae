@@ -35,6 +35,7 @@ class SubWindow(QWidget):
         self.kingpos: dict = {'white': None, 'black': None}
         self.check = False
         self.check_tile = (None, None)
+        self.enpassant_color = None
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -43,6 +44,8 @@ class SubWindow(QWidget):
         self.s_capture.setSource(QUrl.fromLocalFile("main/audio/capture.wav"))
         self.s_check = QSoundEffect()
         self.s_check.setSource(QUrl.fromLocalFile("main/audio/move-check.wav"))
+        self.s_castle = QSoundEffect()
+        self.s_castle.setSource(QUrl.fromLocalFile("main/audio/castle.wav"))
 
         self.render()
 
@@ -179,6 +182,109 @@ class SubWindow(QWidget):
             fen += char
         
         return fen
+
+    def canCastle(self, castletype: str) -> bool:
+        '''Checks to see if the king can castle depending on the parameter passed. 
+        K: white kingside, Q: white queenside, k: black kingside, q: black queenside.'''
+        # White kingside
+        if castletype == 'K':
+            checkifempty = ['f1', 'g1']
+            rookpos = self.convertToPieceLayoutPos((8, 1))
+            rookwidget = self.ui.piece_layout.itemAtPosition(rookpos[0], rookpos[1]).widget()
+            rookinfo = rookwidget.pieceInformation()
+            kingpos = self.convertToPieceLayoutPos((5, 1))
+            kingwidget = self.ui.piece_layout.itemAtPosition(kingpos[0], kingpos[1]).widget()
+            kinginfo = kingwidget.pieceInformation()
+            # Checks tiles inbetween are empty
+            for tile in checkifempty:
+                pos = self.convertSquareNotation(tile)
+                pos = self.convertToPieceLayoutPos(pos)
+                widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[0] is not None:
+                    return False
+            # Checks that rook and king are in the correct position and have not moved
+            if (kinginfo[0] != 'king') or (kingwidget.moved is True) or (kinginfo[1] != 'white'):
+                return False
+            if (rookinfo[0] != 'rook') or (rookwidget.moved is True) or (rookinfo[1] != 'white'):
+                return False
+            # Else allow the castle
+            return True
+        # White queenside
+        if castletype == 'Q':
+            checkifempty = ['b1', 'c1', 'd1']
+            rookpos = self.convertToPieceLayoutPos((1, 1))
+            rookwidget = self.ui.piece_layout.itemAtPosition(rookpos[0], rookpos[1]).widget()
+            rookinfo = rookwidget.pieceInformation()
+            kingpos = self.convertToPieceLayoutPos((5, 1))
+            kingwidget = self.ui.piece_layout.itemAtPosition(kingpos[0], kingpos[1]).widget()
+            kinginfo = kingwidget.pieceInformation()
+            # Checks tiles inbetween are empty
+            for tile in checkifempty:
+                pos = self.convertSquareNotation(tile)
+                pos = self.convertToPieceLayoutPos(pos)
+                widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[0] is not None:
+                    return False
+            # Checks that rook and king are in the correct position and have not moved
+            if (kinginfo[0] != 'king') or (kingwidget.moved is True) or (kinginfo[1] != 'white'):
+                return False
+            if (rookinfo[0] != 'rook') or (rookwidget.moved is True) or (rookinfo[1] != 'white'):
+                return False
+            # Else allow the castle
+            return True
+        # Black kingside
+        if castletype == 'k':
+            checkifempty = ['f8', 'g8']
+            rookpos = self.convertToPieceLayoutPos((8, 8))
+            rookwidget = self.ui.piece_layout.itemAtPosition(rookpos[0], rookpos[1]).widget()
+            rookinfo = rookwidget.pieceInformation()
+            kingpos = self.convertToPieceLayoutPos((5, 8))
+            kingwidget = self.ui.piece_layout.itemAtPosition(kingpos[0], kingpos[1]).widget()
+            kinginfo = kingwidget.pieceInformation()
+            # Checks tiles inbetween are empty
+            for tile in checkifempty:
+                pos = self.convertSquareNotation(tile)
+                pos = self.convertToPieceLayoutPos(pos)
+                widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[0] is not None:
+                    return False
+            # Checks that rook and king are in the correct position and have not moved
+            if (kinginfo[0] != 'king') or (kingwidget.moved is True) or (kinginfo[1] != 'black'):
+                return False
+            if (rookinfo[0] != 'rook') or (rookwidget.moved is True) or (rookinfo[1] != 'black'):
+                return False
+            # Else allow the castle
+            return True
+        # Black queenside
+        if castletype == 'q':
+            checkifempty = ['b8', 'c8', 'd8']
+            rookpos = self.convertToPieceLayoutPos((1, 8))
+            rookwidget = self.ui.piece_layout.itemAtPosition(rookpos[0], rookpos[1]).widget()
+            rookinfo = rookwidget.pieceInformation()
+            kingpos = self.convertToPieceLayoutPos((5, 8))
+            kingwidget = self.ui.piece_layout.itemAtPosition(kingpos[0], kingpos[1]).widget()
+            kinginfo = kingwidget.pieceInformation()
+            # Checks tiles inbetween are empty
+            for tile in checkifempty:
+                pos = self.convertSquareNotation(tile)
+                pos = self.convertToPieceLayoutPos(pos)
+                widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[0] is not None:
+                    return False
+            # Checks that rook and king are in the correct position and have not moved
+            if (kinginfo[0] != 'king') or (kingwidget.moved is True) or (kinginfo[1] != 'black'):
+                return False
+            if (rookinfo[0] != 'rook') or (rookwidget.moved is True) or (rookinfo[1] != 'black'):
+                return False
+            # Else allow the castle
+            return True
+        
+        # Edge case
+        return False
 
     # Places pieces at specific position
     def placePiece(self, piece: str, color: str, pos: tuple, tilepos: str) -> None:
@@ -406,7 +512,7 @@ class SubWindow(QWidget):
 
     # Moves piece
     def movePiece(self, piece, target) -> None:
-        'Sets target piece data to the piece that just captured.'
+        'Sets target piece data to the piece that just captured /  moved.'
         flip = {'white': 'black', 'black': 'white'}
         pieceinfo = piece.pieceInformation()
         targetinfo = target.pieceInformation()
@@ -418,11 +524,87 @@ class SubWindow(QWidget):
             else:
                 self.s_capture.play()
             self.hideHints()
+            # Castle check
+            if (pieceinfo[0] == 'king') and (targetinfo[2] in piece.castlemoves):
+                if pieceinfo[1] == 'white' and targetinfo[2] == 'g1':
+                    target2 = self.ui.piece_layout.itemAtPosition(7, 7).widget()
+                    target2.setPieceInformation(None, None, 'h1')
+                    target2.pieceShow()
+                    target2 = self.ui.piece_layout.itemAtPosition(7, 5).widget()
+                    target2.setPieceInformation('rook', 'white', 'f1')
+                    target2.pieceShow()
+                    self.active_tile.resetColor()
+                    self.active_tile = self.ui.board_layout.itemAtPosition(7, 5).widget()
+                elif pieceinfo[1] == 'white' and targetinfo[2] == 'c1':
+                    target2 = self.ui.piece_layout.itemAtPosition(7, 0).widget()
+                    target2.setPieceInformation(None, None, 'a1')
+                    target2.pieceShow()
+                    target2 = self.ui.piece_layout.itemAtPosition(7, 3).widget()
+                    target2.setPieceInformation('rook', 'white', 'd1')
+                    target2.pieceShow()
+                    self.active_tile.resetColor()
+                    self.active_tile = self.ui.board_layout.itemAtPosition(7, 3).widget()
+                elif pieceinfo[1] == 'black' and targetinfo[2] == 'g8':
+                    target2 = self.ui.piece_layout.itemAtPosition(0, 7).widget()
+                    target2.setPieceInformation(None, None, 'h8')
+                    target2.pieceShow()
+                    target2 = self.ui.piece_layout.itemAtPosition(0, 5).widget()
+                    target2.setPieceInformation('rook', 'black', 'f8')
+                    target2.pieceShow()
+                    self.active_tile.resetColor()
+                    self.active_tile = self.ui.board_layout.itemAtPosition(0, 5).widget()
+                elif pieceinfo[1] == 'black' and targetinfo[2] == 'c8':
+                    target2 = self.ui.piece_layout.itemAtPosition(0, 0).widget()
+                    target2.setPieceInformation(None, None, 'a8')
+                    target2.pieceShow()
+                    target2 = self.ui.piece_layout.itemAtPosition(0, 3).widget()
+                    target2.setPieceInformation('rook', 'black', 'd8')
+                    target2.pieceShow()
+                    self.active_tile.resetColor()
+                    self.active_tile = self.ui.board_layout.itemAtPosition(0, 3).widget()
+                self.s_castle.play()
             piece.setPieceInformation(None, None, pieceinfo[2])
             target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
             piece.pieceShow()
             target.pieceShow()
             targetinfo = target.pieceInformation()
+            # En passant
+            if targetinfo[0] == 'pawn':
+                currentpos = self.convertSquareNotation(targetinfo[2])
+                lastpos = self.convertSquareNotation(pieceinfo[2])
+                change = (currentpos[0] - lastpos[0], currentpos[1] - lastpos[1])
+                # Check to see if pawn just made a two place advance, if so set the target square
+                if (change[0] == 0) and ((change[1] == 2) or (change[1] == -2)):
+                    target.two_moved = True
+                    enpassant = self.convertSquareNotation(targetinfo[2])
+                    if targetinfo[1] == 'white':
+                        enpassant = (enpassant[0], enpassant[1] - 1)
+                    else:
+                        enpassant = (enpassant[0], enpassant[1] + 1)
+                    enpassant = self.convertSquareNotation(enpassant)
+                    self.enpassant_square = enpassant # Set enpassant square
+                    self.enpassant_color = targetinfo[1]
+                # Check to see if pawn is trying to initiate an enpassant
+                elif targetinfo[2] == self.enpassant_square:
+                    enpassant = self.convertSquareNotation(targetinfo[2])
+                    if targetinfo[1] == 'white':
+                        enpassant = (enpassant[0], enpassant[1] - 1)
+                    else:
+                        enpassant = (enpassant[0], enpassant[1] + 1)
+                    targetenpassant = self.convertToPieceLayoutPos(enpassant)
+                    capturepiece = self.ui.piece_layout.itemAtPosition(targetenpassant[0], targetenpassant[1]).widget()
+                    enpassant = self.convertSquareNotation(enpassant)
+                    capturepiece.setPieceInformation(None, None, enpassant)
+                    capturepiece.pieceShow()
+                    self.enpassant_square = '-'
+                    self.enpassant_color = None
+                    self.s_capture.play()
+                # Reset enpassant target square
+                else:
+                    self.enpassant_square = '-'    
+                    self.enpassant_color = None   
+            if targetinfo[0] == 'king':
+                target.moved = True
             # Check highlight
             possiblechecks = self.calculateValidSquares(target)
             oppositeking = flip[targetinfo[1]]
@@ -563,6 +745,17 @@ class SubWindow(QWidget):
                 tempvalid.append(left_up)
             if self.checkObstruction(right_up):
                 tempvalid.append(right_up)
+            # En passant check
+            try:
+                left_up = self.convertSquareNotation(left_up)
+                right_up = self.convertSquareNotation(right_up)
+                if self.enpassant_color != pieceinfo[1]:
+                    if left_up == self.enpassant_square:
+                        tempvalid.append((pos[0] - 1, pos[1] + (1*x)))
+                    elif right_up == self.enpassant_square:
+                        tempvalid.append((pos[0] + 1, pos[1] + (1*x)))
+            except Exception:
+                pass
         
         # Valid squares for knight
         if pieceinfo[0] == 'knight':
@@ -647,6 +840,31 @@ class SubWindow(QWidget):
             tempvalid.append((pos[0]-1, pos[1]-1))
             tempvalid.append((pos[0], pos[1]+1))
             tempvalid.append((pos[0], pos[1]-1))
+
+            # Check for castles
+            piece.castlemoves = []
+            if pieceinfo[1] == 'white':
+                if self.canCastle('K'):
+                    position = (pos[0]+2, pos[1])
+                    tempvalid.append(position)
+                    position = self.convertSquareNotation(position)
+                    piece.castlemoves.append(position)
+                if self.canCastle('Q'):
+                    position = (pos[0]-2, pos[1])
+                    tempvalid.append(position)
+                    position = self.convertSquareNotation(position)
+                    piece.castlemoves.append(position)
+            elif pieceinfo[1] == 'black':
+                if self.canCastle('k'):
+                    position = (pos[0]+2, pos[1])
+                    tempvalid.append(position)
+                    position = self.convertSquareNotation(position)
+                    piece.castlemoves.append(position)
+                if self.canCastle('q'):
+                    position = (pos[0]-2, pos[1])
+                    tempvalid.append(position)
+                    position = self.convertSquareNotation(position)
+                    piece.castlemoves.append(position)
 
         # Remove squares outside of board and append to valid list
         valid = []

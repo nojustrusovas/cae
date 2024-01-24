@@ -356,6 +356,8 @@ class Piece(QSvgWidget):
         self.color = color
         self.pos = pos
         self.moved = False
+        self.castlemoves = []
+        self.two_moved = False
         self.pieceShow()
 
     def pieceInformation(self) -> tuple:
