@@ -1,5 +1,4 @@
 # main/subwindows/chessboard.py
-# TODO: rewrite all validation to use a 3D array
 
 from PySide6.QtWidgets import QWidget, QMainWindow
 from PySide6.QtMultimedia import QSoundEffect
