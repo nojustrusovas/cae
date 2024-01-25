@@ -533,9 +533,8 @@ class SubWindow(QWidget):
         self.check_tile = (tile, tile.defaultColor())
         self.check_tile[0].setDefaultColor('#FF3838')
         self.check_tile[0].resetColor()
-        if sound:
-            if self.mutesound is False:
-                self.s_check.play()
+        if self.mutesound is False:
+            self.s_check.play()
 
     # Moves piece
     def movePiece(self, piece, target) -> None:
@@ -659,7 +658,7 @@ class SubWindow(QWidget):
                 self.check_tile[0].resetColor()
             if self.kingpos[oppositeking] in possiblechecks:
                 self.check = True
-                self.checkFunc(flip[targetinfo[1]], True)
+                self.checkFunc(flip[targetinfo[1]])
             if (targetinfo[0] == 'pawn') and (not target.moved):
                 target.moved = True
             if targetinfo[0] == 'king':
@@ -1172,8 +1171,6 @@ class PreferencesWindow(QMainWindow):
                 hint.showHint()
             else:
                 hint.setToHint(self.parent.hintname)
-        if self.parent.check_tile[0] is not None:
-            self.parent.checkFunc(self.parent.checked_king, False)
     
     def closeWindow(self) -> None:
         self.parent.windowstack.pop()
