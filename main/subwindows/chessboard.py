@@ -549,6 +549,7 @@ class SubWindow(QWidget):
                 if targetinfo[0] is None:
                     self.s_move.play()
                 else:
+                    self.ui.capturePiece(targetinfo[1], targetinfo[0])
                     self.s_capture.play()
             self.hideHints()
 

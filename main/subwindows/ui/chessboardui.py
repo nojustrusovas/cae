@@ -240,7 +240,46 @@ class UI(object):
         self.queenpiece.setStyleSheet('QWidget:hover {\n	background-color: rgba(255, 255, 255, 80);\n	border-radius: 15px;\n}')
         self.pawn_promote_widget.hide()
 
+            # Captured pieces layouts
+        self.white_captured_widget = QWidget(chessboard)
+        self.white_captured_widget.setGeometry(QRect(34, 14, 272, 17))
+        self.white_captured_widget.setStyleSheet('background-color: rgba(0, 0, 0, 0)')
+        self.white_captured = QHBoxLayout(self.white_captured_widget)
+        self.white_captured.setSpacing(0)
+        self.white_captured.setContentsMargins(0, 0, 0, 0)
+        self.white_captured_pointer = 0
+
+        for i in range(16):
+            empty = Piece(None, None, None, self)
+            empty.ui_only = True
+            self.white_captured.addWidget(empty)
+
+        self.black_captured_widget = QWidget(chessboard)
+        self.black_captured_widget.setGeometry(QRect(34, 659, 272, 17))
+        self.black_captured_widget.setStyleSheet('background-color: rgba(0, 0, 0, 0)')
+        self.black_captured = QHBoxLayout(self.black_captured_widget)
+        self.black_captured.setSpacing(0)
+        self.black_captured.setContentsMargins(0, 0, 0, 0)
+        self.black_captured_pointer = 0
+
+        for i in range(16):
+            empty = Piece(None, None, None, self)
+            empty.ui_only = True
+            self.black_captured.addWidget(empty)
+
         self.drawTiles('#E9EDF8', '#B9C0D6')
+    
+    def capturePiece(self, col, piece) -> None:
+        if col == 'white':
+            target = self.white_captured.itemAt(self.white_captured_pointer).widget()
+            target.setPieceInformation(piece, col, None)
+            target.pieceShow()
+            self.white_captured_pointer += 1
+        else:
+            target = self.black_captured.itemAt(self.black_captured_pointer).widget()
+            target.setPieceInformation(piece, col, None)
+            target.pieceShow()
+            self.black_captured_pointer += 1
 
     # Draw tiles and add to grid
     def drawTiles(self, col1, col2) -> None:
