@@ -434,11 +434,12 @@ class Piece(QSvgWidget):
             self.load('main/images/none.svg')
     
     def pieceHide(self) -> None:
-        self.load('main/images/none.svg')
+        if self.name is not None:
+            self.load('main/images/none.svg')
     
-    def setToHint(self) -> bool:
+    def setToHint(self, type) -> bool:
         if self.name is None:
-            self.load('main/images/defaulthint.svg')
+            self.load(f'main/images/{type}.svg')
             return True
         else:
             return False

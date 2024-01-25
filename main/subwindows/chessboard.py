@@ -18,6 +18,9 @@ class SubWindow(QWidget):
         self.preferenceswindow = PreferencesWindow(self)
 
         # Board variables
+        self.mutesound = False
+        self.blindfold = False
+        self.hidehints = False
         self.occupied: bool = False
         self.firstmove: bool = False
         self.movelogflag: bool = False
@@ -38,6 +41,8 @@ class SubWindow(QWidget):
         self.check_tile = (None, None)
         self.enpassant_color = None
         self.pawn_promote = None
+        self.hintname = 'defaulthint'
+        self.hintcapturename = 'defaulthintcapture'
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -98,9 +103,11 @@ class SubWindow(QWidget):
     def pawnPromoteRequest(self, piecename) -> None:
         pawninfo = self.pawn_promote.pieceInformation()
         self.pawn_promote.setPieceInformation(piecename, pawninfo[1], pawninfo[2])
-        self.pawn_promote.pieceShow()
+        if self.blindfold is False:
+            self.pawn_promote.pieceShow()
         self.ui.pawnPromotion(pawninfo[2])
-        self.s_promote.play()
+        if self.mutesound is False:
+            self.s_promote.play()
         self.occupied = False
         self.pawn_promote = None
 
@@ -304,7 +311,8 @@ class SubWindow(QWidget):
         'Places piece on existing empty widget.'
         piecewidget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
         piecewidget.setPieceInformation(piece, color, tilepos)
-        piecewidget.pieceShow()
+        if self.blindfold is False:
+            piecewidget.pieceShow()
 
         # Update kingpos
         pieceinfo = piecewidget.pieceInformation()
@@ -515,16 +523,19 @@ class SubWindow(QWidget):
             self.active_tile.resetColor()
             self.active_piece = None
 
-    def checkFunc(self, kingcolor) -> None:
+    def checkFunc(self, kingcolor, sound) -> None:
         'Code to run during an active check'
-        pos = self.kingpos[kingcolor]
+        self.checked_king = kingcolor
+        pos = self.kingpos[self.checked_king]
         pos = self.convertSquareNotation(pos)
         pos = self.convertToPieceLayoutPos(pos)
         tile = self.ui.board_layout.itemAtPosition(pos[0], pos[1]).widget()
         self.check_tile = (tile, tile.defaultColor())
         self.check_tile[0].setDefaultColor('#FF3838')
         self.check_tile[0].resetColor()
-        self.s_check.play()
+        if sound:
+            if self.mutesound is False:
+                self.s_check.play()
 
     # Moves piece
     def movePiece(self, piece, target) -> None:
@@ -535,54 +546,65 @@ class SubWindow(QWidget):
         valid = self.calculateValidMoves(piece)
         if targetinfo[2] in valid:
             # Sound
-            if targetinfo[0] is None:
-                self.s_move.play()
-            else:
-                self.s_capture.play()
+            if self.mutesound is False:
+                if targetinfo[0] is None:
+                    self.s_move.play()
+                else:
+                    self.s_capture.play()
             self.hideHints()
             # Castle check
             if (pieceinfo[0] == 'king') and (targetinfo[2] in piece.castlemoves):
                 if pieceinfo[1] == 'white' and targetinfo[2] == 'g1':
                     target2 = self.ui.piece_layout.itemAtPosition(7, 7).widget()
                     target2.setPieceInformation(None, None, 'h1')
-                    target2.pieceShow()
+                    if self.blindfold is False:
+                        target2.pieceShow()
                     target2 = self.ui.piece_layout.itemAtPosition(7, 5).widget()
                     target2.setPieceInformation('rook', 'white', 'f1')
-                    target2.pieceShow()
+                    if self.blindfold is False:
+                        target2.pieceShow()
                     self.active_tile.resetColor()
                     self.active_tile = self.ui.board_layout.itemAtPosition(7, 5).widget()
                 elif pieceinfo[1] == 'white' and targetinfo[2] == 'c1':
                     target2 = self.ui.piece_layout.itemAtPosition(7, 0).widget()
                     target2.setPieceInformation(None, None, 'a1')
-                    target2.pieceShow()
+                    if self.blindfold is False:
+                        target2.pieceShow()
                     target2 = self.ui.piece_layout.itemAtPosition(7, 3).widget()
                     target2.setPieceInformation('rook', 'white', 'd1')
-                    target2.pieceShow()
+                    if self.blindfold is False:
+                        target2.pieceShow()
                     self.active_tile.resetColor()
                     self.active_tile = self.ui.board_layout.itemAtPosition(7, 3).widget()
                 elif pieceinfo[1] == 'black' and targetinfo[2] == 'g8':
                     target2 = self.ui.piece_layout.itemAtPosition(0, 7).widget()
                     target2.setPieceInformation(None, None, 'h8')
-                    target2.pieceShow()
+                    if self.blindfold is False:
+                        target2.pieceShow()
                     target2 = self.ui.piece_layout.itemAtPosition(0, 5).widget()
                     target2.setPieceInformation('rook', 'black', 'f8')
-                    target2.pieceShow()
+                    if self.blindfold is False:
+                        target2.pieceShow()
                     self.active_tile.resetColor()
                     self.active_tile = self.ui.board_layout.itemAtPosition(0, 5).widget()
                 elif pieceinfo[1] == 'black' and targetinfo[2] == 'c8':
                     target2 = self.ui.piece_layout.itemAtPosition(0, 0).widget()
                     target2.setPieceInformation(None, None, 'a8')
-                    target2.pieceShow()
+                    if self.blindfold is False:
+                        target2.pieceShow()
                     target2 = self.ui.piece_layout.itemAtPosition(0, 3).widget()
                     target2.setPieceInformation('rook', 'black', 'd8')
-                    target2.pieceShow()
+                    if self.blindfold is False:
+                        target2.pieceShow()
                     self.active_tile.resetColor()
                     self.active_tile = self.ui.board_layout.itemAtPosition(0, 3).widget()
-                self.s_castle.play()
+                if self.mutesound is False:
+                    self.s_castle.play()
             piece.setPieceInformation(None, None, pieceinfo[2])
             target.setPieceInformation(pieceinfo[0], pieceinfo[1], targetinfo[2])
-            piece.pieceShow()
-            target.pieceShow()
+            if self.blindfold is False:
+                piece.pieceShow()
+                target.pieceShow()
             targetinfo = target.pieceInformation()
             # En passant
             if targetinfo[0] == 'pawn':
@@ -611,10 +633,12 @@ class SubWindow(QWidget):
                     capturepiece = self.ui.piece_layout.itemAtPosition(targetenpassant[0], targetenpassant[1]).widget()
                     enpassant = self.convertSquareNotation(enpassant)
                     capturepiece.setPieceInformation(None, None, enpassant)
-                    capturepiece.pieceShow()
+                    if self.blindfold is False:
+                        capturepiece.pieceShow()
                     self.enpassant_square = '-'
                     self.enpassant_color = None
-                    self.s_capture.play()
+                    if self.mutesound is False:
+                        self.s_capture.play()
                 # Reset enpassant target square
                 else:
                     self.enpassant_square = '-'    
@@ -635,7 +659,7 @@ class SubWindow(QWidget):
                 self.check_tile[0].resetColor()
             if self.kingpos[oppositeking] in possiblechecks:
                 self.check = True
-                self.checkFunc(flip[targetinfo[1]])
+                self.checkFunc(flip[targetinfo[1]], True)
             if (targetinfo[0] == 'pawn') and (not target.moved):
                 target.moved = True
             if targetinfo[0] == 'king':
@@ -712,19 +736,20 @@ class SubWindow(QWidget):
             
     def showHints(self, validmoves: list, piece) -> None:
         'Method to show hints on board'
-        for valid in validmoves:
-            pos = self.convertSquareNotation(valid)
-            pos = self.convertToPieceLayoutPos(pos)
-            widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
-            widget2 = self.ui.hint_layout.itemAtPosition(pos[0], pos[1]).widget()
-            pieceinfo = piece.pieceInformation()
-            widgetinfo = widget.pieceInformation()
-            a = widget.setToHint()
-            if a:
-                self.hints.append(widget)
-            elif pieceinfo[1] != widgetinfo[1]:
-                widget2.showHint()
-                self.hints.append(widget2)
+        if self.hidehints is False:
+            for valid in validmoves:
+                pos = self.convertSquareNotation(valid)
+                pos = self.convertToPieceLayoutPos(pos)
+                widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+                widget2 = self.ui.hint_layout.itemAtPosition(pos[0], pos[1]).widget()
+                pieceinfo = piece.pieceInformation()
+                widgetinfo = widget.pieceInformation()
+                a = widget.setToHint(self.hintname)
+                if a:
+                    self.hints.append(widget)
+                elif pieceinfo[1] != widgetinfo[1]:
+                    widget2.showHint()
+                    self.hints.append(widget2)
 
     def hideHints(self) -> None:
         'Method to hide all hints on the board'
@@ -1046,6 +1071,8 @@ class PreferencesWindow(QMainWindow):
         self.ui = chessboardui.UI_PreferencesWindow()
         self.blindfoldflag = False
         self.highlightsflag = False
+        self.hintsflag = False
+        self.soundflag = False
 
         self.render()
 
@@ -1058,6 +1085,25 @@ class PreferencesWindow(QMainWindow):
         self.ui.theme_combo.currentIndexChanged.connect(self.changeTheme)
         self.ui.blindfold_checkbox.toggled.connect(self.blindfold)
         self.ui.highlights_checkbox.toggled.connect(self.hideHighlights)
+        self.ui.movehints_checkbox.toggled.connect(self.moveHints)
+        self.ui.sound_checkbox.toggled.connect(self.muteSound)
+
+    def muteSound(self) -> None:
+        if not self.soundflag:
+            self.parent.mutesound = True
+            self.soundflag = True
+        else:
+            self.parent.mutesound = False
+            self.soundflag = False
+
+    def moveHints(self) -> None:
+        if not self.hintsflag:
+            self.parent.hideHints()
+            self.parent.hidehints = True
+            self.hintsflag = True
+        else:
+            self.parent.hidehints = False
+            self.hintsflag = False
 
     def hideHighlights(self) -> None:
             self.resetHighlights()
@@ -1067,13 +1113,15 @@ class PreferencesWindow(QMainWindow):
         if not self.blindfoldflag:
             for x in range(64):
                 piece = self.parent.ui.piece_layout.itemAt(x).widget()
-                piece.hide()
+                piece.pieceHide()
             self.blindfoldflag = True
+            self.parent.blindfold = True
         else:
             for x in range(64):
                 piece = self.parent.ui.piece_layout.itemAt(x).widget()
-                piece.show()
+                piece.pieceShow()
             self.blindfoldflag = False
+            self.parent.blindfold = False
 
     def resetHighlights(self) -> None:
         if self.parent.active_tile is not None:
@@ -1089,23 +1137,43 @@ class PreferencesWindow(QMainWindow):
         if index == 0:
             self.parent.highlight = '#B0A7F6'
             self.parent.highlight2 = '#A49BE8'
-            self.resetHighlights()
+            self.parent.hintname = 'defaulthint'
+            self.parent.hintcapturename = 'defaulthintcapture'
             self.parent.ui.changeTheme('#E9EDF8', '#B9C0D6')
         if index == 1:
             self.parent.highlight = '#EAECA0'
             self.parent.highlight2 = '#E1E399'
-            self.resetHighlights()
+            self.parent.hintname = 'classichint'
+            self.parent.hintcapturename = 'classiccapture'
             self.parent.ui.changeTheme('#F1D9B4', '#DBBE9B')
         if index == 2:
             self.parent.highlight = '#F4F67F'
             self.parent.highlight2 = '#BBCC42'
-            self.resetHighlights()
+            self.parent.hintname = 'yellowhint'
+            self.parent.hintcapturename = 'yellowcapture'
             self.parent.ui.changeTheme('#E9EDCC', '#779954')
         if index == 3:
             self.parent.highlight = '#A2D5FA'
             self.parent.highlight2 = '#7FA9C7'
-            self.resetHighlights()
+            self.parent.hintname = 'contrasthint'
+            self.parent.hintcapturename = 'contrastcapture'
             self.parent.ui.changeTheme('#F0F3F4', '#727C8A')
+        if not self.parent.hide_highlights:
+            if self.parent.second_active is not None:
+                self.parent.second_active.setStyleSheet(f'background-color: {self.parent.highlight}')
+            if self.parent.active_tile is not None:
+                self.parent.active_tile.setStyleSheet(f'background-color: {self.parent.highlight2}')
+        for i in range(64):
+            hintwidget = self.parent.ui.hint_layout.itemAt(i).widget()
+            hintwidget.changeDefault(self.parent.hintcapturename)
+        for hint in self.parent.hints:
+            if isinstance(hint, chessboardui.Hint):
+                hint.removeHint()
+                hint.showHint()
+            else:
+                hint.setToHint(self.parent.hintname)
+        if self.parent.check_tile[0] is not None:
+            self.parent.checkFunc(self.parent.checked_king, False)
     
     def closeWindow(self) -> None:
         self.parent.windowstack.pop()
