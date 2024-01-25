@@ -523,7 +523,7 @@ class SubWindow(QWidget):
             self.active_tile.resetColor()
             self.active_piece = None
 
-    def checkFunc(self, kingcolor, sound) -> None:
+    def checkFunc(self, kingcolor) -> None:
         'Code to run during an active check'
         self.checked_king = kingcolor
         pos = self.kingpos[self.checked_king]
@@ -551,6 +551,7 @@ class SubWindow(QWidget):
                 else:
                     self.s_capture.play()
             self.hideHints()
+
             # Castle check
             if (pieceinfo[0] == 'king') and (targetinfo[2] in piece.castlemoves):
                 if pieceinfo[1] == 'white' and targetinfo[2] == 'g1':
@@ -605,6 +606,7 @@ class SubWindow(QWidget):
                 piece.pieceShow()
                 target.pieceShow()
             targetinfo = target.pieceInformation()
+
             # En passant
             if targetinfo[0] == 'pawn':
                 currentpos = self.convertSquareNotation(targetinfo[2])
@@ -641,24 +643,44 @@ class SubWindow(QWidget):
                 # Reset enpassant target square
                 else:
                     self.enpassant_square = '-'    
-                    self.enpassant_color = None   
+                    self.enpassant_color = None
+
                 # Pawn promotion
                 pawnrank = self.convertSquareNotation(targetinfo[2])[1]
                 if (targetinfo[1] == 'white') and (pawnrank == 8):
                     self.showPawnPromotion(target, 'white')
                 elif (targetinfo[1] == 'black') and (pawnrank == 1):
                     self.showPawnPromotion(target, 'black')
-            if targetinfo[0] == 'king':
-                target.moved = True
+
             # Check highlight
             possiblechecks = self.calculateValidSquares(target)
             oppositeking = flip[targetinfo[1]]
             if self.check is True:
                 self.check_tile[0].setDefaultColor(self.check_tile[1])
                 self.check_tile[0].resetColor()
+                self.check = False
             if self.kingpos[oppositeking] in possiblechecks:
                 self.check = True
                 self.checkFunc(flip[targetinfo[1]])
+            else:
+                # Discovered check
+                for i in range(64):
+                    widget = self.ui.piece_layout.itemAt(i).widget()
+                    widgetinfo = widget.pieceInformation()
+                    if widgetinfo[0] is None:
+                        continue
+                    if widgetinfo[1] == targetinfo[1]:
+                        checksquares = self.calculateValidSquares(widget)
+                        if self.kingpos[oppositeking] in checksquares:
+                            self.check = True
+                            self.checkFunc(flip[widgetinfo[1]])
+                            print(flip[widgetinfo[1]])
+                            break
+                    else:
+                        continue
+            
+            if targetinfo[0] == 'king':
+                target.moved = True
             if (targetinfo[0] == 'pawn') and (not target.moved):
                 target.moved = True
             if targetinfo[0] == 'king':
