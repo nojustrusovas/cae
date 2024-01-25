@@ -849,7 +849,7 @@ class SubWindow(QWidget):
             bl_continuous = True
             br_continuous = True
 
-            for i in range(1, 7):
+            for i in range(1, 8):
                 tl = (pos[0] - (1*i), pos[1] + (1*i))
                 tr = (pos[0] + (1*i), pos[1] + (1*i))
                 bl = (pos[0] - (1*i), pos[1] - (1*i))
@@ -880,7 +880,7 @@ class SubWindow(QWidget):
             left_continuous = True
             right_continuous = True
 
-            for i in range(1, 7):
+            for i in range(1, 8):
                 up = (pos[0], pos[1] + (1*i))
                 down = (pos[0], pos[1] - (1*i))
                 left = (pos[0] - (1*i), pos[1])
