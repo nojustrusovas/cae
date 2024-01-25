@@ -1,8 +1,8 @@
 # todo:
 * ~~Pawn promotion~~
 * ~~Finish accessibility and settings~~
-* ### Show captured pieces
-* Working export fen function
+* ~~Show captured pieces~~
+* ### Working export fen function
 * Checkmate and stalemate system
 * Time loss
 * Move log
