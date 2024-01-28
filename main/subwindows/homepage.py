@@ -3,6 +3,8 @@
 from PySide6.QtWidgets import QWidget, QMainWindow
 from PySide6.QtGui import QCloseEvent
 from subwindows.ui import homepageui
+from PySide6.QtMultimedia import QSoundEffect
+from PySide6.QtCore import QUrl, QEvent
 
 
 class SubWindow(QWidget):
@@ -13,20 +15,44 @@ class SubWindow(QWidget):
         self.windowstack: list = []
         self.practicewindow = PracticeWindow(self)
 
+        # Sound
+        self.s_hover = QSoundEffect()
+        self.s_hover.setSource(QUrl.fromLocalFile("main/audio/buttonhover.wav"))
+        self.s_hover.setVolume(0.3)
+
         self.render()
 
     # Render UI elements for sub window
     def render(self) -> None:
         self.ui.initUI(self)
+        self.ui.play_button.installEventFilter(self)
+        self.ui.practice_button.installEventFilter(self)
+        self.ui.quit_button.installEventFilter(self)
 
-        self.ui.quit_button.clicked.connect(self.parent.quitApplication)
-        self.ui.play_button.clicked.connect(self.playMethod)
-        self.ui.practice_button.clicked.connect(self.displayPracticeWindow)
+        #self.ui.quit_button.clicked.connect(self.parent.quitApplication)
+        #self.ui.play_button.clicked.connect(self.playMethod)
+        #self.ui.practice_button.clicked.connect(self.displayPracticeWindow)
 
     # Update window data
     def refresh(self) -> None:
         self.parent.setFixedSize(517, 295)
         self.parent.setWindowTitle('Homepage')
+
+    # Play button hover sound
+    def buttonHover(self) -> None:
+        self.s_hover.play()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Enter:
+            self.buttonHover()
+        elif event.type() == QEvent.MouseButtonPress:
+                if obj.objectName() == 'Play':
+                    self.playMethod()
+                elif obj.objectName() == 'Practice':
+                    self.displayPracticeWindow()
+                elif obj.objectName() == 'Quit':
+                    self.parent.quitApplication()
+                return True
 
     # Displays a new specified sub window
     def playMethod(self) -> None:
