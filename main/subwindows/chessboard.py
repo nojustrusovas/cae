@@ -134,31 +134,34 @@ class SubWindow(QWidget):
                        5: 4, 6: 3, 7: 2, 8: 1}
         
         pieces = list(self.piece_placement)
-        rank = 8
-        file = 8
+        rank = 1
+        file = 1
         for piece in pieces:
             if piece == '/':
-                rank -= 1
-                file = 8
+                rank += 1
+                file = 1
             elif piece.isnumeric():
                 file += int(piece)
             elif piece.lower() in piece_ref:
-                pos = self.convertToPieceLayoutPos((flip_digits[file], flip_digits[rank]))
-                tilepos = self.convertSquareNotation((flip_digits[file], flip_digits[rank]))
+                pos = self.convertToPieceLayoutPos((file, flip_digits[rank]))
+                tilepos = self.convertSquareNotation((file, flip_digits[rank]))
                 if piece.isupper():
-                    self.placePiece(piece_ref[piece.lower()], 'black', pos, tilepos)
+                    self.placePiece(piece_ref[piece.lower()], 'white', pos, tilepos)
                 else:
-                    self.placePiece(piece_ref[piece], 'white', pos, tilepos)
-                file -= 1
+                    self.placePiece(piece_ref[piece], 'black', pos, tilepos)
+                file += 1
 
     # Returns new FEN string
     def exportFEN(self) -> str:
+        sections = []
+
+        # Section 1
         piece_ref = {'pawn': 'p', 'rook': 'r', 'bishop': 'b',
                      'knight': 'n','king': 'k', 'queen': 'q'}
         pieces = []
         empty = 0
         a = 1
-        rank = 8
+        rank = 1
         file = 8
 
         for i in range(64):
@@ -169,7 +172,7 @@ class SubWindow(QWidget):
                 pieces.append('/')
                 file = 8
                 a += 1
-                rank -= 1
+                rank += 1
                 empty = 0
             piecepos = self.convertToPieceLayoutPos((file, rank))
             piecewidget = self.ui.piece_layout.itemAtPosition(piecepos[0], piecepos[1]).widget()
@@ -178,7 +181,7 @@ class SubWindow(QWidget):
                 file -= 1
                 continue
             piece = piece_ref[piecewidget.pieceInformation()[0]]
-            if piecewidget.pieceInformation()[1] == 'black':
+            if piecewidget.pieceInformation()[1] == 'white':
                 piece = piece.upper()
             if empty != 0:
                 pieces.append(str(empty))
@@ -186,22 +189,56 @@ class SubWindow(QWidget):
             pieces.append(piece)
             file -= 1
 
-        pieces.append(' ')
-        pieces.append(self.active_color)
-        pieces.append(' ')
-        pieces.append(self.castling_availability)
-        pieces.append(' ')
-        pieces.append(self.enpassant_square)
-        pieces.append(' ')
-        pieces.append(str(self.halfmove_clock))
-        pieces.append(' ')
-        pieces.append(str(self.fullmove_clock))
-
         fen = ''
         for char in pieces:
             fen += char
+        sections.append(fen[::-1])
+
+        # Section 2
+        sections.append(self.active_color)
+
+        # Section 3
+        castling_availability = ''
+        whiteking = self.ui.piece_layout.itemAtPosition(7, 4).widget()
+        blackking = self.ui.piece_layout.itemAtPosition(0, 4).widget()
+        whitekinginfo = whiteking.pieceInformation()
+        blackkinginfo = blackking.pieceInformation()
+        kwhiterook = self.ui.piece_layout.itemAtPosition(7, 7).widget()
+        qwhiterook = self.ui.piece_layout.itemAtPosition(7, 0).widget()
+        kblackrook = self.ui.piece_layout.itemAtPosition(0, 7).widget()
+        qblackrook = self.ui.piece_layout.itemAtPosition(0, 0).widget()
+        kwhiterookinfo = kwhiterook.pieceInformation()
+        qwhiterookinfo = kwhiterook.pieceInformation()
+        kblackrookinfo = kblackrook.pieceInformation()
+        qblackrookinfo = qblackrook.pieceInformation()
+
+        if (whitekinginfo[0] == 'king') and (whitekinginfo[1] == 'white') and (whiteking.moved is False):
+            if (kwhiterookinfo[0] == 'rook') and (kwhiterookinfo[1] == 'white') and (kwhiterook.moved is False):
+                castling_availability += 'K'
+            if (qwhiterookinfo[0] == 'rook') and (qwhiterookinfo[1] == 'white') and (qwhiterook.moved is False):
+                castling_availability += 'Q'
+        if (blackkinginfo[0] == 'king') and (blackkinginfo[1] == 'black') and (blackking.moved is False):
+            if (kblackrookinfo[0] == 'rook') and (kblackrookinfo[1] == 'black') and (kblackrook.moved is False):
+                castling_availability += 'k'
+            if (qblackrookinfo[0] == 'rook') and (qblackrookinfo[1] == 'black') and (qblackrook.moved is False):
+                castling_availability += 'q'
         
-        return fen
+        if castling_availability == '':
+            sections.append('-')
+        else:
+            sections.append(castling_availability)
+
+        # Section 4
+        sections.append(self.enpassant_square)
+
+        # Section 5
+        sections.append(self.halfmove_clock)
+
+        # Section 6
+        sections.append(self.fullmove_clock)
+
+        newfen = f'{sections[0]} {sections[1]} {sections[2]} {sections[3]} {sections[4]} {sections[5]}'
+        return newfen
 
     def canCastle(self, castletype: str) -> bool:
         '''Checks to see if the king can castle depending on the parameter passed. 
@@ -544,6 +581,14 @@ class SubWindow(QWidget):
         targetinfo = target.pieceInformation()
         valid = self.calculateValidMoves(piece)
         if targetinfo[2] in valid:
+            # Half-move and full-move clocks
+            if (pieceinfo[0] == 'pawn') or (targetinfo[0] is not None):
+                self.halfmove_clock = 0
+            else:
+                self.halfmove_clock += 1
+            if pieceinfo[1] == 'black':
+                self.fullmove_clock += 1
+
             # Sound
             if self.mutesound is False:
                 if targetinfo[0] is None:
@@ -699,6 +744,7 @@ class SubWindow(QWidget):
                 self.firstmove = True
                 return True
             self.timeSwitch()
+            print(self.exportFEN())
             return True
         else:
             return False
