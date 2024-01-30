@@ -24,9 +24,9 @@ class SubWindow(QWidget):
         self.occupied: bool = False
         self.firstmove: bool = False
         self.movelogflag: bool = False
-        self.clock1: int = 75
+        self.clock1: int = 15
         self.clock1_active: bool = False
-        self.clock2: int = 75
+        self.clock2: int = 15
         self.clock2_active: bool = False
         self.highlight: str = '#B0A7F6'
         self.highlight2: str = '#A49BE8'
@@ -429,6 +429,12 @@ class SubWindow(QWidget):
 
         if self.clock1 == 0:
             self.timer1.stop()
+            self.occupied = True
+            self.timeloss(self.player1_color)
+            self.ui.player1_time.setStyleSheet('color: #FF4848')
+            self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+            self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+            self.ui.player2_label.setStyleSheet('color: #FFFFFF')
 
     # Updates timer 2 for timeController
     def update2(self):
@@ -437,6 +443,12 @@ class SubWindow(QWidget):
 
         if self.clock2 == 0:
             self.timer2.stop()
+            self.occupied = True
+            self.timeloss(self.player1_color)
+            self.ui.player2_time.setStyleSheet('color: #FF4848')
+            self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+            self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+            self.ui.player1_label.setStyleSheet('color: #FFFFFF')
 
     # Controls the countdown and functionality of the timers
     def timeController(self) -> None:
@@ -625,7 +637,16 @@ class SubWindow(QWidget):
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')
         self.ui.player2_label.setStyleSheet('color: #FFFFFF')
         self.ui.checkmate(flip[color])
-        
+    
+    def timeloss(self, color):
+        'Function called when color loses on time'
+        flip = {'white': 'black', 'black': 'white'}
+        self.occupied = True
+        self.s_end.play()
+        self.timer1.stop()
+        self.timer2.stop()
+        self.ui.timeloss(flip[color])
+
     # Moves piece
     def movePiece(self, piece, target) -> None:
         'Sets target piece data to the piece that just captured /  moved.'

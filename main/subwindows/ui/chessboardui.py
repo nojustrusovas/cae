@@ -427,6 +427,11 @@ class UI(object):
 "}")
         self.checkmatewidget.hide()
 
+    def timeloss(self, color) -> None:
+        self.checkmatewidget.show()
+        self.checkmatewidget.load(f'main/images/{color}timeloss.svg')
+
+
 class UI_ConfirmWindow(object):
     def initUI(self, confirmwindow):
         if not confirmwindow.objectName():
