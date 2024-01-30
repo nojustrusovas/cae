@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.stackedwidget)
         self.instantiateSubwindows()
-        self.setCurrentSubwindow(0)
+        self.setCurrentSubwindow(2)
 
     # Instantiate all sub windows of application
     def instantiateSubwindows(self) -> None:

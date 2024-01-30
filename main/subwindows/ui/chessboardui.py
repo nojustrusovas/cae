@@ -13,6 +13,7 @@ class UI(object):
             chessboard.setObjectName(u'chessboard')
         chessboard.resize(1000, 700)
         self.pawnpromote = False
+        self.chessboard = chessboard
 
         # Chessboard
         self.board = QWidget(chessboard)
@@ -268,6 +269,7 @@ class UI(object):
             self.black_captured.addWidget(empty)
 
         self.drawTiles('#E9EDF8', '#B9C0D6')
+        self.checkmateWidget()
     
     def capturePiece(self, col, piece) -> None:
         if col == 'white':
@@ -338,6 +340,92 @@ class UI(object):
             self.pawn_promote_widget.hide()
             self.pawnpromote = False
 
+    def checkmate(self, color) -> None:
+        self.checkmatewidget.show()
+        self.checkmatewidget.load(f'main/images/{color}checkmate.svg')
+
+    def checkmateWidget(self) -> None:
+        self.checkmatewidget = QSvgWidget(self.chessboard)
+        self.checkmatewidget.setGeometry(QRect(200, 220, 222, 252))
+
+        self.view_button = QWidget(self.checkmatewidget)
+        self.view_button.setObjectName(u'View')
+        self.view_button.setGeometry(QRect(52, 120, 121, 31))
+        self.view_button.setStyleSheet(u"QWidget {\n"
+"	border-radius: 10px;\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
+"	border: 0.5px solid #454545;\n"
+"}\n"
+"\n"
+"QWidget:hover {\n"
+"	border-radius: 10px;\n"
+"	background-color: rgba(255, 255, 255, 10);\n"
+"	border: 1px solid #FFFFFF;\n"
+"}")
+        self.view_label = QLabel(self.view_button)
+        self.view_label.setText('VIEW BOARD')
+        self.view_label.setGeometry(QRect(29, 8, 68, 16))
+        font = QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        self.view_label.setFont(font)
+        self.view_label.setStyleSheet(u"QLabel {\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
+"	border: 0px solid #FFFFFF;\n"
+"}")
+        
+        self.analyse_button = QWidget(self.checkmatewidget)
+        self.analyse_button.setObjectName(u'Analyse')
+        self.analyse_button.setGeometry(QRect(52, 160, 121, 31))
+        self.analyse_button.setStyleSheet(u"QWidget {\n"
+"	border-radius: 10px;\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
+"	border: 0.5px solid #454545;\n"
+"}\n"
+"\n"
+"QWidget:hover {\n"
+"	border-radius: 10px;\n"
+"	background-color: rgba(255, 255, 255, 10);\n"
+"	border: 1px solid #FFFFFF;\n"
+"}")
+        self.analyse_label = QLabel(self.analyse_button)
+        self.analyse_label.setText('ANALYSE')
+        self.analyse_label.setGeometry(QRect(38, 8, 68, 16))
+        font = QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        self.analyse_label.setFont(font)
+        self.analyse_label.setStyleSheet(u"QLabel {\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
+"	border: 0px solid #FFFFFF;\n"
+"}")
+        
+        self.save_button = QWidget(self.checkmatewidget)
+        self.save_button.setObjectName(u'Save')
+        self.save_button.setGeometry(QRect(52, 200, 121, 31))
+        self.save_button.setStyleSheet(u"QWidget {\n"
+"	border-radius: 10px;\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
+"	border: 0.5px solid #454545;\n"
+"}\n"
+"\n"
+"QWidget:hover {\n"
+"	border-radius: 10px;\n"
+"	background-color: rgba(255, 255, 255, 10);\n"
+"	border: 1px solid #FFFFFF;\n"
+"}")
+        self.save_label = QLabel(self.save_button)
+        self.save_label.setText('SAVE AND QUIT')
+        self.save_label.setGeometry(QRect(23, 8, 78, 16))
+        font = QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        self.save_label.setFont(font)
+        self.save_label.setStyleSheet(u"QLabel {\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
+"	border: 0px solid #FFFFFF;\n"
+"}")
+        self.checkmatewidget.hide()
 
 class UI_ConfirmWindow(object):
     def initUI(self, confirmwindow):

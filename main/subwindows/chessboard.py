@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QWidget, QMainWindow
 from PySide6.QtMultimedia import QSoundEffect
-from PySide6.QtCore import QTimer, Qt, QUrl
+from PySide6.QtCore import QTimer, Qt, QUrl, QEvent
 from PySide6.QtGui import QCloseEvent, QKeyEvent
 from subwindows.ui import chessboardui
 from math import floor
@@ -55,12 +55,20 @@ class SubWindow(QWidget):
         self.s_castle.setSource(QUrl.fromLocalFile("main/audio/castle.wav"))
         self.s_promote = QSoundEffect()
         self.s_promote.setSource(QUrl.fromLocalFile("main/audio/promote.wav"))
+        self.s_hover = QSoundEffect()
+        self.s_hover.setSource(QUrl.fromLocalFile("main/audio/buttonhover.wav"))
+        self.s_hover.setVolume(0.3)
+        self.s_end = QSoundEffect()
+        self.s_end.setSource(QUrl.fromLocalFile("main/audio/game-end.wav"))
 
         self.render()
 
     # Render UI elements for subwindow
     def render(self) -> None:
         self.ui.initUI(self)
+        self.ui.view_button.installEventFilter(self)
+        self.ui.analyse_button.installEventFilter(self)
+        self.ui.save_button.installEventFilter(self)
         self.ui.player1_time.setText(self.convertTime(self.clock1))
         self.ui.player2_time.setText(self.convertTime(self.clock2))
         self.importFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
@@ -99,6 +107,24 @@ class SubWindow(QWidget):
     def refresh(self) -> None:
         self.parent.setFixedSize(1000, 700)
         self.parent.setWindowTitle('Chessboard')
+
+    # Play button hover sound
+    def buttonHover(self) -> None:
+        self.s_hover.play()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Enter:
+            if (obj.objectName() == 'View') or (obj.objectName() == 'Analyse') or (obj.objectName() == 'Save'):
+                self.buttonHover()
+        elif event.type() == QEvent.MouseButtonPress:
+                if obj.objectName() == 'View':
+                    self.ui.checkmatewidget.hide()
+                elif obj.objectName() == 'Analyse':
+                    pass
+                elif obj.objectName() == 'Save':
+                    self.close()
+                    self.parent.setCurrentSubwindow(0)
+                return True
 
     def pawnPromoteRequest(self, piecename) -> None:
         pawninfo = self.pawn_promote.pieceInformation()
@@ -436,6 +462,8 @@ class SubWindow(QWidget):
 
     # Switches timers
     def timeSwitch(self) -> None:
+        if self.occupied:
+            return
         if self.clock1_active:
             self.timer1.stop()
             self.timer2.start(1000)
@@ -464,17 +492,18 @@ class SubWindow(QWidget):
     # Executes upon mouse click
     def mousePressEvent(self, event: QKeyEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            self.click_pos = ( event.pos().x(), event.pos().y() )
-            tile_pos = self.findTile(self.click_pos)
-            if tile_pos is None:
-                if self.active_tile is not None:
-                    self.active_tile.resetColor()
-                    self.hideHints()
-                    self.active_tile = None
-                return True
-            tile = self.ui.board_layout.itemAtPosition(tile_pos[0], tile_pos[1]).widget()
-            piece = self.ui.piece_layout.itemAtPosition(tile_pos[0], tile_pos[1]).widget()
-            self.moveInputLogic(tile, piece)
+            if not self.occupied:
+                self.click_pos = ( event.pos().x(), event.pos().y() )
+                tile_pos = self.findTile(self.click_pos)
+                if tile_pos is None:
+                    if self.active_tile is not None:
+                        self.active_tile.resetColor()
+                        self.hideHints()
+                        self.active_tile = None
+                    return True
+                tile = self.ui.board_layout.itemAtPosition(tile_pos[0], tile_pos[1]).widget()
+                piece = self.ui.piece_layout.itemAtPosition(tile_pos[0], tile_pos[1]).widget()
+                self.moveInputLogic(tile, piece)
 
     # Executes upon key press
     def keyPressEvent(self, event: QKeyEvent) -> None:
@@ -573,6 +602,30 @@ class SubWindow(QWidget):
         if self.mutesound is False:
             self.s_check.play()
 
+        # Checkmate code
+        for i in range(64):
+            piece = self.ui.piece_layout.itemAt(i).widget()
+            valid = self.calculateValidMoves(piece)
+            pieceinfo = piece.pieceInformation()
+            if pieceinfo[1] != kingcolor:
+                continue
+            if self.returnHints(valid, piece):
+                return
+        self.checkmate(kingcolor)
+
+    def checkmate(self, color):
+        'Function called when color is checkmated'
+        flip = {'white': 'black', 'black': 'white'}
+        self.occupied = True
+        self.s_end.play()
+        self.timer1.stop()
+        self.timer2.stop()
+        self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+        self.ui.checkmate(flip[color])
+        
     # Moves piece
     def movePiece(self, piece, target) -> None:
         'Sets target piece data to the piece that just captured /  moved.'
@@ -744,7 +797,6 @@ class SubWindow(QWidget):
                 self.firstmove = True
                 return True
             self.timeSwitch()
-            print(self.exportFEN())
             return True
         else:
             return False
@@ -818,6 +870,26 @@ class SubWindow(QWidget):
                 elif pieceinfo[1] != widgetinfo[1]:
                     widget2.showHint()
                     self.hints.append(widget2)
+
+    def returnHints(self, validmoves: list, piece) -> list:
+        hints = []
+        if self.hidehints is False:
+            for valid in validmoves:
+                pos = self.convertSquareNotation(valid)
+                pos = self.convertToPieceLayoutPos(pos)
+                widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+                widget2 = self.ui.hint_layout.itemAtPosition(pos[0], pos[1]).widget()
+                pieceinfo = piece.pieceInformation()
+                widgetinfo = widget.pieceInformation()
+                if widget.name is None:
+                    a = True
+                else:
+                    a = False
+                if a:
+                    hints.append(widget)
+                elif pieceinfo[1] != widgetinfo[1]:
+                    hints.append(widget2)
+        return hints
 
     def hideHints(self) -> None:
         'Method to hide all hints on the board'

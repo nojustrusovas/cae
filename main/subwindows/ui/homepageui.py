@@ -31,32 +31,26 @@ class UI(object):
         self.play_button.setGeometry(QRect(60, 170, 121, 31))
         self.play_button.setStyleSheet(u"QWidget {\n"
 "	border-radius: 10px;\n"
-"	background-color: rgba(40, 40, 40, 0);\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
 "	border: 0.5px solid #454545;\n"
 "}\n"
 "\n"
 "QWidget:hover {\n"
 "	border-radius: 10px;\n"
-"	background-color: rgba(40, 40, 40, 100);\n"
+"	background-color: rgba(255, 255, 255, 10);\n"
 "	border: 1px solid #FFFFFF;\n"
 "}")
         self.play_label = QLabel(self.play_button)
-        self.play_label.setText('Play')
-        self.play_label.setGeometry(QRect(46, 8, 41, 16))
+        self.play_label.setText('PLAY')
+        self.play_label.setGeometry(QRect(45, 8, 41, 16))
         font = QFont()
-        font.setPointSize(15)
+        font.setPointSize(12)
         font.setBold(True)
         self.play_label.setFont(font)
         self.play_label.setStyleSheet(u"QLabel {\n"
 "	background-color: rgba(255, 255, 255, 0);\n"
 "	border: 0px solid #FFFFFF;\n"
 "}")
-        # self.play_button = QPushButton(homepage)
-        # self.play_button.setObjectName(u"play_button")
-        # self.play_button.setGeometry(QRect(80, 170, 101, 32))
-        # font1 = QFont()
-        # font1.setBold(True)
-        # self.play_button.setFont(font1)
 
         # Practice button
         self.practice_button = QWidget(homepage)
@@ -64,20 +58,20 @@ class UI(object):
         self.practice_button.setGeometry(QRect(200, 170, 121, 31))
         self.practice_button.setStyleSheet(u"QWidget {\n"
 "	border-radius: 10px;\n"
-"	background-color: rgba(40, 40, 40, 0);\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
 "	border: 0.5px solid #454545;\n"
 "}\n"
 "\n"
 "QWidget:hover {\n"
 "	border-radius: 10px;\n"
-"	background-color: rgba(40, 40, 40, 100);\n"
+"	background-color: rgba(255, 255, 255, 10);\n"
 "	border: 1px solid #FFFFFF;\n"
 "}")
         self.practice_label = QLabel(self.practice_button)
-        self.practice_label.setText('Practice')
-        self.practice_label.setGeometry(QRect(35, 8, 61, 16))
+        self.practice_label.setText('PRACTICE')
+        self.practice_label.setGeometry(QRect(33, 8, 61, 16))
         font1 = QFont()
-        font1.setPointSize(15)
+        font1.setPointSize(12)
         font1.setBold(False)
         self.practice_label.setFont(font1)
         self.practice_label.setStyleSheet(u"QLabel {\n"
@@ -97,42 +91,29 @@ class UI(object):
         self.quit_button.setGeometry(QRect(340, 170, 121, 31))
         self.quit_button.setStyleSheet(u"QWidget {\n"
 "	border-radius: 10px;\n"
-"	background-color: rgba(40, 40, 40, 0);\n"
+"	background-color: rgba(255, 255, 255, 0);\n"
 "	border: 0.5px solid #454545;\n"
 "}\n"
 "\n"
 "QWidget:hover {\n"
 "	border-radius: 10px;\n"
-"	background-color: rgba(40, 40, 40, 100);\n"
+"	background-color: rgba(255, 255, 255, 10);\n"
 "	border: 1px solid #FFFFFF;\n"
 "}")
         self.quit_label = QLabel(self.quit_button)
-        self.quit_label.setText('Quit')
+        self.quit_label.setText('QUIT')
         self.quit_label.setGeometry(QRect(45, 8, 61, 16))
         self.quit_label.setFont(font1)
         self.quit_label.setStyleSheet(u"QLabel {\n"
 "	background-color: rgba(255, 255, 255, 0);\n"
 "	border: 0px solid #FFFFFF;\n"
 "}")
-        # self.quit_button = QPushButton(homepage)
-        # self.quit_button.setObjectName(u"quit_button")
-        # self.quit_button.setGeometry(QRect(340, 170, 101, 32))
-        # font3 = QFont()
-        # font3.setBold(False)
-        # font3.setItalic(False)
-        # font3.setUnderline(False)
-        # font3.setStrikeOut(False)
-        # self.quit_button.setFont(font3)
 
         self.retranslateUI(homepage)
         QMetaObject.connectSlotsByName(homepage)
 
     def retranslateUI(self, homepage):
         homepage.setWindowTitle(QCoreApplication.translate("homepage", u"Homepage", None))
-        #self.title.setText(QCoreApplication.translate("homepage", u"Chess Application and Engine", None))
-        #self.play_button.setText(QCoreApplication.translate("homepage", u"Play", None))
-        #self.practice_button.setText(QCoreApplication.translate("homepage", u"Practice", None))
-        #self.quit_button.setText(QCoreApplication.translate("homepage", u"Quit", None))
 
 
 class PracticeWindowUI(object):
