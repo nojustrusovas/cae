@@ -150,6 +150,7 @@ class UI(object):
 
         # Scroll area / Move log
         self.scrollarea = QScrollArea(self.groupbox)
+        self.scrollarea.setStyleSheet(u"background-color: rgba(80, 80, 80, 0);")
         self.scrollarea.setGeometry(QRect(9, 59, 341, 561))
         self.scrollarea.setWidgetResizable(True)
         self.scrollarea_contents = QWidget()
@@ -430,6 +431,10 @@ class UI(object):
     def timeloss(self, color) -> None:
         self.checkmatewidget.show()
         self.checkmatewidget.load(f'main/images/{color}timeloss.svg')
+
+    def stalemate(self) -> None:
+        self.checkmatewidget.show()
+        self.checkmatewidget.load('main/images/stalemate.svg')
 
 
 class UI_ConfirmWindow(object):

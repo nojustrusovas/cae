@@ -24,9 +24,9 @@ class SubWindow(QWidget):
         self.occupied: bool = False
         self.firstmove: bool = False
         self.movelogflag: bool = False
-        self.clock1: int = 15
+        self.clock1: int = 200
         self.clock1_active: bool = False
-        self.clock2: int = 15
+        self.clock2: int = 200
         self.clock2_active: bool = False
         self.highlight: str = '#B0A7F6'
         self.highlight2: str = '#A49BE8'
@@ -647,6 +647,18 @@ class SubWindow(QWidget):
         self.timer2.stop()
         self.ui.timeloss(flip[color])
 
+    def stalemate(self):
+        'Function to execute when there is a stalemate'
+        self.occupied = True
+        self.s_end.play()
+        self.timer1.stop()
+        self.timer2.stop()
+        self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+        self.ui.stalemate()
+
     # Moves piece
     def movePiece(self, piece, target) -> None:
         'Sets target piece data to the piece that just captured /  moved.'
@@ -817,10 +829,60 @@ class SubWindow(QWidget):
                 self.timeController()
                 self.firstmove = True
                 return True
+            print('hi')
+            self.stalemateCheck()
             self.timeSwitch()
             return True
         else:
             return False
+
+    def stalemateCheck(self) -> None:
+        'Function to check whether there is a stalemate.'
+        whitepieces = []
+        blackpieces = []
+        for i in range(64):
+            piece = self.ui.piece_layout.itemAt(i).widget()
+            pieceinfo = piece.pieceInformation()
+            if pieceinfo[1] == 'white':
+                whitepieces.append(piece)
+            elif pieceinfo[1] == 'black':
+                blackpieces.append(piece)
+
+        # Check for white stalemate
+        valid = []
+        for piece in whitepieces:
+            tempvalid = self.calculateValidMoves(piece)
+            pieceinfo = piece.pieceInformation()
+            for temp in tempvalid:
+                pos = self.convertSquareNotation(temp)
+                pos = self.convertToPieceLayoutPos(pos)
+                widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[1] != pieceinfo[1]:
+                    valid.append(temp)
+        if valid:
+            pass
+        else:
+            self.stalemate()
+
+
+        # Check for black stalemate
+        valid = []
+        for piece in blackpieces:
+            tempvalid = self.calculateValidMoves(piece)
+            pieceinfo = piece.pieceInformation()
+            for temp in tempvalid:
+                pos = self.convertSquareNotation(temp)
+                pos = self.convertToPieceLayoutPos(pos)
+                widget = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[1] != pieceinfo[1]:
+                    valid.append(temp)
+        if valid:
+            pass
+        else:
+            self.stalemate()
+        return
 
     def calculateValidMoves(self, piece) -> list:
         'Returns a list of valid moves after check and move validation'
