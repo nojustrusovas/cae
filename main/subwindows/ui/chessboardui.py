@@ -2,7 +2,7 @@
 
 from PySide6.QtWidgets import QWidget, QGridLayout, QGroupBox, QPushButton, QLabel, QScrollArea, QVBoxLayout, QStyleOption, QStyle, QComboBox, QCheckBox, QHBoxLayout
 from PySide6.QtGui import QFont, QPaintEvent, QPainter
-from PySide6.QtCore import Qt, QRect, QMetaObject, QCoreApplication
+from PySide6.QtCore import QRect, QMetaObject, QCoreApplication, QSize
 from PySide6.QtSvgWidgets import QSvgWidget
 
 
@@ -144,30 +144,39 @@ class UI(object):
         self.groupbox.setGeometry(QRect(620, 30, 361, 631))
         self.groupbox.setTitle('')
 
-        self.divider = QWidget(chessboard)
-        self.divider.setGeometry(QRect(629, 75, 331, 1))
-        self.divider.setStyleSheet(u"background-color: rgb(80, 80, 80);")
-
         # Scroll area / Move log
         self.scrollarea = QScrollArea(self.groupbox)
-        self.scrollarea.setStyleSheet(u"background-color: rgba(80, 80, 80, 0);")
-        self.scrollarea.setGeometry(QRect(9, 59, 341, 561))
+        self.scrollarea.setObjectName(u"scrollarea")
+        self.scrollarea.setGeometry(QRect(10, 40, 171, 111))
+        self.scrollarea.setMinimumSize(QSize(342, 580))
+        self.scrollarea.setMaximumSize(QSize(342, 580))
         self.scrollarea.setWidgetResizable(True)
         self.scrollarea_contents = QWidget()
-        self.scrollarea_contents.setGeometry(QRect(0, 0, 339, 559))
-        self.verticalLayout = QVBoxLayout(self.scrollarea_contents)
+        self.scrollarea_contents.setObjectName(u"scrollarea_contents")
+        self.scrollarea_contents.setGeometry(QRect(0, 0, 169, 208))
+        self.vertical_layout = QVBoxLayout(self.scrollarea_contents)
+        self.vertical_layout.setObjectName(u"vertical_layout")
+        for i in range(24):
+            label = self.NotationLabel(self.scrollarea_contents, i+1, None)
+            self.vertical_layout.addWidget(label)
+        selected = self.scrollarea_contents.findChild(QLabel, '1')
+        selected.setText('1. -')
+        selected.setStyleSheet(u"background-color: rgba(255, 255, 255, 8)")
+
         self.scrollarea.setWidget(self.scrollarea_contents)
 
         # Buttons
-        self.exit_button = QPushButton(chessboard)
-        self.exit_button.setText('Exit')
-        self.exit_button.setGeometry(QRect(630, 38, 51, 32))
-        self.exit_button.setFocusPolicy(Qt.NoFocus)
+        self.exit_button = QSvgWidget(chessboard)
+        self.exit_button.setObjectName(u'Exit')
+        self.exit_button.setGeometry(QRect(932, 38, 22, 22))
+        self.exit_button.load('main/images/exit.svg')
+        self.exit_button.show()
 
-        self.settings_button = QPushButton(chessboard)
-        self.settings_button.setText('Settings')
-        self.settings_button.setGeometry(QRect(690, 38, 71, 32))
-        self.settings_button.setFocusPolicy(Qt.NoFocus)
+        self.settings_button = QSvgWidget(chessboard)
+        self.settings_button.setObjectName(u'Settings')
+        self.settings_button.setGeometry(QRect(955, 38, 22, 22))
+        self.settings_button.load('main/images/settings.svg')
+        self.settings_button.show()
 
         # Player 1
         font = QFont()
@@ -435,6 +444,17 @@ class UI(object):
     def stalemate(self) -> None:
         self.checkmatewidget.show()
         self.checkmatewidget.load('main/images/stalemate.svg')
+
+    def NotationLabel(self, parent, index: int, text: str) -> QLabel:
+        label = QLabel(parent)
+        label.setObjectName(str(index))
+        label.setMinimumSize(QSize(0, 16))
+        label.setStyleSheet(u"background-color: rgba(255, 255, 255, 0)")
+        if text is None:
+            return label
+        else:
+            label.setText(f'{str(index)}. {text}')
+            return label
 
 
 class UI_ConfirmWindow(object):

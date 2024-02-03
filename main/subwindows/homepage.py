@@ -52,7 +52,7 @@ class SubWindow(QWidget):
                     self.displayPracticeWindow()
                 elif obj.objectName() == 'Quit':
                     self.parent.quitApplication()
-                return True
+        return False
 
     # Displays a new specified sub window
     def playMethod(self) -> None:

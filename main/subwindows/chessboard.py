@@ -24,9 +24,9 @@ class SubWindow(QWidget):
         self.occupied: bool = False
         self.firstmove: bool = False
         self.movelogflag: bool = False
-        self.clock1: int = 200
+        self.clock1: int = 105
         self.clock1_active: bool = False
-        self.clock2: int = 200
+        self.clock2: int = 105
         self.clock2_active: bool = False
         self.highlight: str = '#B0A7F6'
         self.highlight2: str = '#A49BE8'
@@ -43,6 +43,9 @@ class SubWindow(QWidget):
         self.pawn_promote = None
         self.hintname = 'defaulthint'
         self.hintcapturename = 'defaulthintcapture'
+        self.is_checkmate = False
+        self.move_log = {}
+        self.move_log_pointer = 0
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -66,9 +69,13 @@ class SubWindow(QWidget):
     # Render UI elements for subwindow
     def render(self) -> None:
         self.ui.initUI(self)
+
         self.ui.view_button.installEventFilter(self)
         self.ui.analyse_button.installEventFilter(self)
         self.ui.save_button.installEventFilter(self)
+        self.ui.settings_button.installEventFilter(self)
+        self.ui.exit_button.installEventFilter(self)
+
         self.ui.player1_time.setText(self.convertTime(self.clock1))
         self.ui.player2_time.setText(self.convertTime(self.clock2))
         self.importFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
@@ -83,9 +90,6 @@ class SubWindow(QWidget):
             self.ui.player2_time.setStyleSheet('color: #FFFFFF')
             self.ui.player1_label.setStyleSheet('color: #404040')
             self.ui.player1_time.setStyleSheet('color: #404040')
-
-        self.ui.exit_button.clicked.connect(self.openConfirmation)
-        self.ui.settings_button.clicked.connect(self.openPreferences)
 
     # Open confirmation window
     def openConfirmation(self) -> None:
@@ -108,14 +112,35 @@ class SubWindow(QWidget):
         self.parent.setFixedSize(1000, 700)
         self.parent.setWindowTitle('Chessboard')
 
-    # Play button hover sound
-    def buttonHover(self) -> None:
-        self.s_hover.play()
+    # If cursor hovers over widget
+    def buttonHover(self, index) -> None:
+        if index == 1:
+            self.s_hover.play()
+        if index == 2:
+            self.ui.exit_button.load('main/images/exit-hover.svg')
+        if index == 3:
+            self.ui.settings_button.load('main/images/settings-hover.svg')
+    
+    # If cursor leaves widget
+    def buttonUnHover(self, index) -> None:
+        if index == 1:
+            self.ui.exit_button.load('main/images/exit.svg')
+        if index == 2:
+            self.ui.settings_button.load('main/images/settings.svg')
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Enter:
             if (obj.objectName() == 'View') or (obj.objectName() == 'Analyse') or (obj.objectName() == 'Save'):
-                self.buttonHover()
+                self.buttonHover(1)
+            elif obj.objectName() == 'Exit':
+                self.buttonHover(2)
+            elif obj.objectName() == 'Settings':
+                self.buttonHover(3)
+        elif event.type() == QEvent.Leave:
+            if obj.objectName() == 'Exit':
+                self.buttonUnHover(1)
+            elif obj.objectName() == 'Settings':
+                self.buttonUnHover(2)
         elif event.type() == QEvent.MouseButtonPress:
                 if obj.objectName() == 'View':
                     self.ui.checkmatewidget.hide()
@@ -124,7 +149,11 @@ class SubWindow(QWidget):
                 elif obj.objectName() == 'Save':
                     self.close()
                     self.parent.setCurrentSubwindow(0)
-                return True
+                elif obj.objectName() == 'Settings':
+                    self.openPreferences()
+                elif obj.objectName() == 'Exit':
+                    self.openConfirmation()
+        return False
 
     def pawnPromoteRequest(self, piecename) -> None:
         pawninfo = self.pawn_promote.pieceInformation()
@@ -176,6 +205,59 @@ class SubWindow(QWidget):
                 else:
                     self.placePiece(piece_ref[piece], 'black', pos, tilepos)
                 file += 1
+
+    # Algebraic notation
+    def algebraicNotation(self, piece, targetpos: str, capture: bool, check: bool, castle: str) -> str:
+        'Returns algebraic notation of piece if it were to move to targetpos, or returns notation of appropriate game conditions'
+        ref = {'knight': 'N', 'rook': 'R', 'king': 'K', 'queen': 'Q', 'bishop': 'B'}
+        pieceinfo = piece.pieceInformation()
+
+        # Identifying disambiguation
+        identifier = ''
+        need_to_disambiguate = []
+        for i in range(64):
+            widget = self.ui.piece_layout.itemAt(i).widget()
+            if widget == piece:
+                continue
+            widgetinfo = widget.pieceInformation()
+            if (widgetinfo[0] == pieceinfo[0]) and (widgetinfo[1] == pieceinfo[1]):
+                valid = self.calculateValidMoves(widget)
+                if targetpos in valid:
+                    need_to_disambiguate.append(widget)
+        print(need_to_disambiguate)
+        if need_to_disambiguate:
+            for piece_2 in need_to_disambiguate:
+                pieceinfo_2 = piece_2.pieceInformation()
+                if identifier == '':
+                    if pieceinfo_2[2][0] == pieceinfo[2][0]:
+                        if pieceinfo_2[2][1] == pieceinfo[2][1]:
+                            identifier = pieceinfo[2]
+                            break
+                        else:
+                            identifier = pieceinfo[2][1]
+                    else:
+                        identifier = pieceinfo[2][0]
+                elif identifier.isalnum():
+                    if pieceinfo_2[2][1] == identifier:
+                        identifier = pieceinfo[2]
+                        break
+                else:
+                    if pieceinfo_2[2][0] == identifier:
+                        if pieceinfo_2[2][1] == pieceinfo[2][1]:
+                            identifier = pieceinfo[2]
+                            break
+                        else:
+                            identifier = pieceinfo[2][1]
+            
+
+        notation: str = targetpos
+        if capture:
+            notation = 'x' + notation
+        if pieceinfo[0] != 'pawn':
+            notation = ref[pieceinfo[0]] + identifier + notation
+        else:
+            notation = identifier + notation
+        return notation
 
     # Returns new FEN string
     def exportFEN(self) -> str:
@@ -637,6 +719,7 @@ class SubWindow(QWidget):
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')
         self.ui.player2_label.setStyleSheet('color: #FFFFFF')
         self.ui.checkmate(flip[color])
+        self.is_checkmate = True
     
     def timeloss(self, color):
         'Function called when color loses on time'
@@ -679,10 +762,13 @@ class SubWindow(QWidget):
             if self.mutesound is False:
                 if targetinfo[0] is None:
                     self.s_move.play()
+                    capture = False
                 else:
                     self.ui.capturePiece(targetinfo[1], targetinfo[0])
                     self.s_capture.play()
+                    capture = True
             self.hideHints()
+            print(self.algebraicNotation(piece, targetinfo[2], capture, False, False))
 
             # Castle check
             if (pieceinfo[0] == 'king') and (targetinfo[2] in piece.castlemoves):
@@ -829,7 +915,6 @@ class SubWindow(QWidget):
                 self.timeController()
                 self.firstmove = True
                 return True
-            print('hi')
             self.stalemateCheck()
             self.timeSwitch()
             return True
@@ -838,6 +923,8 @@ class SubWindow(QWidget):
 
     def stalemateCheck(self) -> None:
         'Function to check whether there is a stalemate.'
+        if self.is_checkmate:
+            return
         whitepieces = []
         blackpieces = []
         for i in range(64):
@@ -1151,7 +1238,11 @@ class SubWindow(QWidget):
                 elif (square[0] < 1) or (square[1] < 1):
                     continue
                 else:
-                    valid.append(self.convertSquareNotation(square))
+                    temppos = self.convertToPieceLayoutPos(square)
+                    widget = self.ui.piece_layout.itemAtPosition(temppos[0], temppos[1]).widget()
+                    widgetinfo = widget.pieceInformation()
+                    if widgetinfo[1] != pieceinfo[1]:
+                        valid.append(self.convertSquareNotation(square))
             except IndexError:
                 continue
         
