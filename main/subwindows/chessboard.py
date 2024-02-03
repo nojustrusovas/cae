@@ -24,9 +24,9 @@ class SubWindow(QWidget):
         self.occupied: bool = False
         self.firstmove: bool = False
         self.movelogflag: bool = False
-        self.clock1: int = 105
+        self.clock1: int = 500
         self.clock1_active: bool = False
-        self.clock2: int = 105
+        self.clock2: int = 500
         self.clock2_active: bool = False
         self.highlight: str = '#B0A7F6'
         self.highlight2: str = '#A49BE8'
@@ -46,6 +46,7 @@ class SubWindow(QWidget):
         self.is_checkmate = False
         self.move_log = {}
         self.move_log_pointer = 0
+        self.current_notation = None
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -224,7 +225,6 @@ class SubWindow(QWidget):
                 valid = self.calculateValidMoves(widget)
                 if targetpos in valid:
                     need_to_disambiguate.append(widget)
-        print(need_to_disambiguate)
         if need_to_disambiguate:
             for piece_2 in need_to_disambiguate:
                 pieceinfo_2 = piece_2.pieceInformation()
@@ -704,8 +704,10 @@ class SubWindow(QWidget):
             if pieceinfo[1] != kingcolor:
                 continue
             if self.returnHints(valid, piece):
+                self.current_notation += '+'
                 return
         self.checkmate(kingcolor)
+        self.current_notation += '#'
 
     def checkmate(self, color):
         'Function called when color is checkmated'
@@ -768,10 +770,11 @@ class SubWindow(QWidget):
                     self.s_capture.play()
                     capture = True
             self.hideHints()
-            print(self.algebraicNotation(piece, targetinfo[2], capture, False, False))
+            self.current_notation = self.algebraicNotation(piece, targetinfo[2], capture, False, False)
 
             # Castle check
             if (pieceinfo[0] == 'king') and (targetinfo[2] in piece.castlemoves):
+                # white kingside
                 if pieceinfo[1] == 'white' and targetinfo[2] == 'g1':
                     target2 = self.ui.piece_layout.itemAtPosition(7, 7).widget()
                     target2.setPieceInformation(None, None, 'h1')
@@ -783,6 +786,8 @@ class SubWindow(QWidget):
                         target2.pieceShow()
                     self.active_tile.resetColor()
                     self.active_tile = self.ui.board_layout.itemAtPosition(7, 5).widget()
+                    self.current_notation = 'O-O'
+                # white queenside
                 elif pieceinfo[1] == 'white' and targetinfo[2] == 'c1':
                     target2 = self.ui.piece_layout.itemAtPosition(7, 0).widget()
                     target2.setPieceInformation(None, None, 'a1')
@@ -794,6 +799,8 @@ class SubWindow(QWidget):
                         target2.pieceShow()
                     self.active_tile.resetColor()
                     self.active_tile = self.ui.board_layout.itemAtPosition(7, 3).widget()
+                    self.current_notation = 'O-O-O'
+                # black kingside
                 elif pieceinfo[1] == 'black' and targetinfo[2] == 'g8':
                     target2 = self.ui.piece_layout.itemAtPosition(0, 7).widget()
                     target2.setPieceInformation(None, None, 'h8')
@@ -805,6 +812,8 @@ class SubWindow(QWidget):
                         target2.pieceShow()
                     self.active_tile.resetColor()
                     self.active_tile = self.ui.board_layout.itemAtPosition(0, 5).widget()
+                    self.current_notation = 'O-O'
+                # black queenside
                 elif pieceinfo[1] == 'black' and targetinfo[2] == 'c8':
                     target2 = self.ui.piece_layout.itemAtPosition(0, 0).widget()
                     target2.setPieceInformation(None, None, 'a8')
@@ -816,6 +825,7 @@ class SubWindow(QWidget):
                         target2.pieceShow()
                     self.active_tile.resetColor()
                     self.active_tile = self.ui.board_layout.itemAtPosition(0, 3).widget()
+                    self.current_notation = 'O-O-O'
                 if self.mutesound is False:
                     self.s_castle.play()
             piece.setPieceInformation(None, None, pieceinfo[2])
@@ -910,12 +920,13 @@ class SubWindow(QWidget):
             else:
                 self.player1_color = 'white'
                 self.active_color = 'w'
+            self.stalemateCheck()
+            print(self.current_notation)
             # First move
             if not self.firstmove:
                 self.timeController()
                 self.firstmove = True
                 return True
-            self.stalemateCheck()
             self.timeSwitch()
             return True
         else:
