@@ -162,6 +162,7 @@ class UI(object):
         selected = self.scrollarea_contents.findChild(QLabel, '1')
         selected.setText('1. -')
         selected.setStyleSheet(u"background-color: rgba(255, 255, 255, 8)")
+        self.move_log_pointer = 1
 
         self.scrollarea.setWidget(self.scrollarea_contents)
 
@@ -455,6 +456,31 @@ class UI(object):
         else:
             label.setText(f'{str(index)}. {text}')
             return label
+
+    def updateMoveLog(self, text, full: bool) -> None:
+        if self.move_log_pointer == 1:
+            if full:
+                self.selected = self.scrollarea_contents.findChild(QLabel, str(self.move_log_pointer))
+                self.selected.setText(text)
+                self.move_log_pointer += 1
+            else:
+                self.selected = self.scrollarea_contents.findChild(QLabel, str(self.move_log_pointer))
+                self.selected.setText(text)
+        else:
+            if full:
+                self.selected = self.scrollarea_contents.findChild(QLabel, str(self.move_log_pointer))
+                self.selected.setText(text)
+                self.move_log_pointer += 1
+                if self.move_log_pointer >= 25:
+                    label = self.NotationLabel(self.scrollarea_contents, self.move_log_pointer, None)
+                    self.vertical_layout.addWidget(label)
+            else:
+                self.selected.setStyleSheet(u"background-color: rgba(255, 255, 255, 0)")
+                self.selected = self.scrollarea_contents.findChild(QLabel, str(self.move_log_pointer))
+                self.selected.setText(text)
+                self.selected.setStyleSheet(u"background-color: rgba(255, 255, 255, 8)")
+                if self.move_log_pointer >= 25:
+                    self.scrollarea.ensureVisible(0,99999)
 
 
 class UI_ConfirmWindow(object):

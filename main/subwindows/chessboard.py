@@ -47,6 +47,7 @@ class SubWindow(QWidget):
         self.move_log = {}
         self.move_log_pointer = 0
         self.current_notation = None
+        self.current_log = []
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -921,7 +922,16 @@ class SubWindow(QWidget):
                 self.player1_color = 'white'
                 self.active_color = 'w'
             self.stalemateCheck()
-            print(self.current_notation)
+            if targetinfo[1] == 'white':
+                self.current_log.append(self.current_notation)
+                self.move_log_pointer += 1
+                self.move_log[self.move_log_pointer] = self.current_log[0]
+                self.updateMoveLog(False)
+            else:
+                self.current_log.append(self.current_notation)
+                self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+                self.current_log = []
+                self.updateMoveLog(True)
             # First move
             if not self.firstmove:
                 self.timeController()
@@ -1077,6 +1087,16 @@ class SubWindow(QWidget):
         for hint in self.hints:
             hint.removeHint()
         self.hints = []
+
+    def updateMoveLog(self, full: bool) -> None:
+        'Updates move log'
+        log_index = self.move_log_pointer
+        if full:
+            log_line = f'{log_index}.   {self.move_log[log_index][0]} {self.move_log[log_index][1]}'
+            self.ui.updateMoveLog(log_line, True)
+        else:
+            log_line = f'{log_index}.   {self.move_log[log_index]}'
+            self.ui.updateMoveLog(log_line, False)
 
     def showPawnPromotion(self, pawn, color) -> None:
         self.occupied = True
