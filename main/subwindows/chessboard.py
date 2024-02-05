@@ -165,7 +165,36 @@ class SubWindow(QWidget):
         self.ui.pawnPromotion(pawninfo[2])
         if self.mutesound is False:
             self.s_promote.play()
+        # Game state checks
+        flip = {'white': 'black', 'black': 'white'}
+        possiblechecks = self.calculateValidSquares(self.pawn_promote)
+        oppositeking = flip[pawninfo[1]]
+        if self.check is True:
+            self.check_tile[0].setDefaultColor(self.check_tile[1])
+            self.check_tile[0].resetColor()
+            self.check = False
+        if self.kingpos[oppositeking] in possiblechecks:
+            self.check = True
+            self.checkFunc(flip[pawninfo[1]])
+        else:
+            # Discovered check
+            for i in range(64):
+                widget = self.ui.piece_layout.itemAt(i).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[0] is None:
+                    continue
+                if widgetinfo[1] == pawninfo[1]:
+                    checksquares = self.calculateValidSquares(widget)
+                    if self.kingpos[oppositeking] in checksquares:
+                        self.check = True
+                        self.checkFunc(flip[widgetinfo[1]])
+                        print(flip[widgetinfo[1]])
+                        break
+                else:
+                    continue
+
         self.occupied = False
+        self.promotion = True
         self.pawn_promote = None
 
     def returnKingPosition(self) -> dict:
@@ -210,7 +239,8 @@ class SubWindow(QWidget):
 
     # Algebraic notation
     def algebraicNotation(self, piece, targetpos: str, capture: bool, check: bool, castle: str) -> str:
-        'Returns algebraic notation of piece if it were to move to targetpos, or returns notation of appropriate game conditions'
+        '''Returns algebraic notation of piece if it were to move to targetpos, or returns notation of
+        appropriate game conditions'''
         ref = {'knight': 'N', 'rook': 'R', 'king': 'K', 'queen': 'Q', 'bishop': 'B'}
         pieceinfo = piece.pieceInformation()
 

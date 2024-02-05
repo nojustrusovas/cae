@@ -14,6 +14,8 @@ class UI(object):
         chessboard.resize(1000, 700)
         self.pawnpromote = False
         self.chessboard = chessboard
+        self.boardhintscol = {}
+        self.boardhints = {}
 
         # Chessboard
         self.board = QWidget(chessboard)
@@ -31,96 +33,128 @@ class UI(object):
         self.a.setFont(font4)
         self.a.setStyleSheet('color: #E9EDF8')
         self.a.setText('a')
+        self.boardhintscol['a'] = 'light'
+        self.boardhints['a'] = self.a
         self.a.setGeometry(QRect(34, 600, 30, 30))
 
         self.b = QLabel(chessboard)
         self.b.setFont(font4)
         self.b.setStyleSheet('color: #B9C0D6')
         self.b.setText('b')
+        self.boardhintscol['b'] = 'dark'
+        self.boardhints['b'] = self.b
         self.b.setGeometry(QRect(104, 600, 30, 30))
         
         self.c = QLabel(chessboard)
         self.c.setFont(font4)
         self.c.setStyleSheet('color: #E9EDF8')
         self.c.setText('c')
+        self.boardhintscol['c'] = 'light'
+        self.boardhints['c'] = self.c
         self.c.setGeometry(QRect(174, 600, 30, 30))
 
         self.d = QLabel(chessboard)
         self.d.setFont(font4)
         self.d.setStyleSheet('color: #B9C0D6')
         self.d.setText('d')
+        self.boardhintscol['d'] = 'dark'
+        self.boardhints['d'] = self.d
         self.d.setGeometry(QRect(244, 600, 30, 30))
 
         self.e = QLabel(chessboard)
         self.e.setFont(font4)
         self.e.setStyleSheet('color: #E9EDF8')
         self.e.setText('e')
+        self.boardhintscol['e'] = 'light'
+        self.boardhints['e'] = self.e
         self.e.setGeometry(QRect(314, 600, 30, 30))
 
         self.f = QLabel(chessboard)
         self.f.setFont(font4)
         self.f.setStyleSheet('color: #B9C0D6')
         self.f.setText('f')
+        self.boardhintscol['f'] = 'dark'
+        self.boardhints['f'] = self.f
         self.f.setGeometry(QRect(384, 600, 30, 30))
 
         self.g = QLabel(chessboard)
         self.g.setFont(font4)
         self.g.setStyleSheet('color: #E9EDF8')
         self.g.setText('g')
+        self.boardhintscol['g'] = 'light'
+        self.boardhints['g'] = self.g
         self.g.setGeometry(QRect(454, 600, 30, 30))
 
         self.h = QLabel(chessboard)
         self.h.setFont(font4)
         self.h.setStyleSheet('color: #B9C0D6')
         self.h.setText('h')
+        self.boardhintscol['h'] = 'dark'
+        self.boardhints['h'] = self.h
         self.h.setGeometry(QRect(524, 600, 30, 30))
 
         self.one = QLabel(chessboard)
         self.one.setFont(font4)
         self.one.setStyleSheet('color: #B9C0D6')
         self.one.setText('1')
+        self.boardhintscol['1'] = 'dark'
+        self.boardhints['1'] = self.one
         self.one.setGeometry(QRect(578, 550, 30, 30))
 
         self.two = QLabel(chessboard)
         self.two.setFont(font4)
         self.two.setStyleSheet('color: #E9EDF8')
         self.two.setText('2')
+        self.boardhintscol['2'] = 'light'
+        self.boardhints['2'] = self.two
         self.two.setGeometry(QRect(578, 480, 30, 30))
 
         self.three = QLabel(chessboard)
         self.three.setFont(font4)
         self.three.setStyleSheet('color: #B9C0D6')
         self.three.setText('3')
+        self.boardhintscol['3'] = 'dark'
+        self.boardhints['3'] = self.three
         self.three.setGeometry(QRect(578, 410, 30, 30))
 
         self.four = QLabel(chessboard)
         self.four.setFont(font4)
         self.four.setStyleSheet('color: #E9EDF8')
         self.four.setText('4')
+        self.boardhintscol['4'] = 'light'
+        self.boardhints['4'] = self.four
         self.four.setGeometry(QRect(580, 340, 30, 30))
 
         self.five = QLabel(chessboard)
         self.five.setFont(font4)
         self.five.setStyleSheet('color: #B9C0D6')
         self.five.setText('5')
+        self.boardhintscol['5'] = 'dark'
+        self.boardhints['5'] = self.five
         self.five.setGeometry(QRect(578, 270, 30, 30))
 
         self.six = QLabel(chessboard)
         self.six.setFont(font4)
         self.six.setStyleSheet('color: #E9EDF8')
         self.six.setText('6')
+        self.boardhintscol['6'] = 'light'
+        self.boardhints['6'] = self.six
         self.six.setGeometry(QRect(578, 200, 30, 30))
 
         self.seven = QLabel(chessboard)
         self.seven.setFont(font4)
         self.seven.setStyleSheet('color: #B9C0D6')
         self.seven.setText('7')
+        self.boardhintscol['7'] = 'dark'
+        self.boardhints['7'] = self.seven
         self.seven.setGeometry(QRect(578, 130, 30, 30))
 
         self.eight = QLabel(chessboard)
         self.eight.setFont(font4)
         self.eight.setStyleSheet('color: #E9EDF8')
         self.eight.setText('8')
+        self.boardhintscol['8'] = 'light'
+        self.boardhints['8'] = self.eight
         self.eight.setGeometry(QRect(578, 60, 30, 30))
 
         # Chess pieces
@@ -334,6 +368,13 @@ class UI(object):
                 else:
                     tile.setDefaultColor(dark)
                     tile.resetColor()
+        for label in 'abcdefgh12345678':
+            hint = self.boardhints[label]
+            if self.boardhintscol[label] == 'light':
+                hint.setStyleSheet(f'color: {light}')
+            else:
+                hint.setStyleSheet(f'color: {dark}')
+            
 
     def pawnPromotion(self, piececolor) -> None:
         if self.pawnpromote is False:
