@@ -233,6 +233,14 @@ class UI(object):
         self.draw_button.setToolTipDuration(5000)
         self.draw_button.show()
 
+        self.copyfen_button = QSvgWidget(chessboard)
+        self.copyfen_button.setObjectName(u'Copy FEN')
+        self.copyfen_button.setGeometry(QRect(684, 38, 22, 22))
+        self.copyfen_button.load('main/images/copy.svg')
+        self.copyfen_button.setToolTip('Copy current fen string to clipboard')
+        self.copyfen_button.setToolTipDuration(5000)
+        self.copyfen_button.show()
+
         # Player 1
         font = QFont()
         font.setPointSize(15)

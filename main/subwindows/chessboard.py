@@ -1,6 +1,6 @@
 # main/subwindows/chessboard.py
 
-from PySide6.QtWidgets import QWidget, QMainWindow
+from PySide6.QtWidgets import QWidget, QMainWindow, QApplication
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtCore import QTimer, Qt, QUrl, QEvent
 from PySide6.QtGui import QCloseEvent, QKeyEvent
@@ -82,11 +82,20 @@ class SubWindow(QWidget):
         self.ui.exit_button.installEventFilter(self)
         self.ui.resign_button.installEventFilter(self)
         self.ui.draw_button.installEventFilter(self)
+        self.ui.copyfen_button.installEventFilter(self)
 
         self.ui.player1_time.setText(self.convertTime(self.clock1))
         self.ui.player2_time.setText(self.convertTime(self.clock2))
         # Default position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-        self.importFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+        self.importFEN('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1')
+        if self.active_color == 'b':
+            self.player1_color = 'black'
+            self.current_log.append('-')
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.player1_color = 'white'
 
         if self.player1_color == 'white':
             self.ui.player1_label.setStyleSheet('color: #FFFFFF')
@@ -135,6 +144,8 @@ class SubWindow(QWidget):
             self.ui.resign_button.load('main/images/resign-hover.svg')
         if index == 5:
             self.ui.draw_button.load('main/images/draw-hover.svg')
+        if index == 6:
+            self.ui.copyfen_button.load('main/images/copy-hover.svg')
     
     # If cursor leaves widget
     def buttonUnHover(self, index) -> None:
@@ -146,6 +157,8 @@ class SubWindow(QWidget):
             self.ui.resign_button.load('main/images/resign.svg')
         if index == 4:
             self.ui.draw_button.load('main/images/draw.svg')
+        if index == 5:
+            self.ui.copyfen_button.load('main/images/copy.svg')
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Enter:
@@ -159,6 +172,8 @@ class SubWindow(QWidget):
                 self.buttonHover(4)
             elif obj.objectName() == 'Draw':
                 self.buttonHover(5)
+            elif obj.objectName() == 'Copy FEN':
+                self.buttonHover(6)
         elif event.type() == QEvent.Leave:
             if obj.objectName() == 'Exit':
                 self.buttonUnHover(1)
@@ -168,6 +183,8 @@ class SubWindow(QWidget):
                 self.buttonUnHover(3)
             elif obj.objectName() == 'Draw':
                 self.buttonUnHover(4)
+            elif obj.objectName() == 'Copy FEN':
+                self.buttonUnHover(5)
         elif event.type() == QEvent.MouseButtonPress:
                 if obj.objectName() == 'View':
                     self.ui.checkmatewidget.hide()
@@ -184,6 +201,8 @@ class SubWindow(QWidget):
                     self.openConfirmation(1)
                 elif obj.objectName() == 'Draw':
                     self.openConfirmation(2)
+                elif obj.objectName() == 'Copy FEN':
+                    self.copyFEN()
         return False
 
     def pawnPromoteRequest(self, piecename) -> None:
@@ -449,6 +468,14 @@ class SubWindow(QWidget):
 
         newfen = f'{sections[0]} {sections[1]} {sections[2]} {sections[3]} {sections[4]} {sections[5]}'
         return newfen
+
+    # Copies FEN string to system clipboard
+    def copyFEN(self) -> None:
+        fen = self.exportFEN()
+        clipboard = QApplication.clipboard()
+        clipboard.setText(fen)
+        event = QEvent(QEvent.Clipboard)
+        self.parent.application.sendEvent(clipboard, event)
 
     def canCastle(self, castletype: str) -> bool:
         '''Checks to see if the king can castle depending on the parameter passed. 
