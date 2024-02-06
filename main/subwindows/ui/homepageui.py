@@ -17,13 +17,6 @@ class UI(object):
         self.title.setGeometry(QRect(156, 40, 209, 96))
         self.title.load('main/images/title.svg')
         self.title.show()
-        # self.title = QLabel(homepage)
-        # self.title.setObjectName(u"title")
-        # self.title.setGeometry(QRect(100, 70, 331, 31))
-        # font = QFont()
-        # font.setPointSize(23)
-        # font.setBold(True)
-        # self.title.setFont(font)
 
         # Play button
         self.play_button = QWidget(homepage)
