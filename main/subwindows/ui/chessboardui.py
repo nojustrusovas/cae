@@ -203,15 +203,35 @@ class UI(object):
         # Buttons
         self.exit_button = QSvgWidget(chessboard)
         self.exit_button.setObjectName(u'Exit')
-        self.exit_button.setGeometry(QRect(932, 38, 22, 22))
+        self.exit_button.setGeometry(QRect(929, 38, 22, 22))
         self.exit_button.load('main/images/exit.svg')
+        self.exit_button.setToolTip('Exit to the main menu')
+        self.exit_button.setToolTipDuration(5000)
         self.exit_button.show()
 
         self.settings_button = QSvgWidget(chessboard)
         self.settings_button.setObjectName(u'Settings')
         self.settings_button.setGeometry(QRect(955, 38, 22, 22))
         self.settings_button.load('main/images/settings.svg')
+        self.settings_button.setToolTip('Configure your preferences')
+        self.settings_button.setToolTipDuration(5000)
         self.settings_button.show()
+
+        self.resign_button = QSvgWidget(chessboard)
+        self.resign_button.setObjectName(u'Resign')
+        self.resign_button.setGeometry(QRect(630, 38, 22, 22))
+        self.resign_button.load('main/images/resign.svg')
+        self.resign_button.setToolTip('Resign')
+        self.resign_button.setToolTipDuration(5000)
+        self.resign_button.show()
+
+        self.draw_button = QSvgWidget(chessboard)
+        self.draw_button.setObjectName(u'Draw')
+        self.draw_button.setGeometry(QRect(655, 38, 22, 22))
+        self.draw_button.load('main/images/draw.svg')
+        self.draw_button.setToolTip('Request to draw')
+        self.draw_button.setToolTipDuration(5000)
+        self.draw_button.show()
 
         # Player 1
         font = QFont()
@@ -374,7 +394,14 @@ class UI(object):
                 hint.setStyleSheet(f'color: {light}')
             else:
                 hint.setStyleSheet(f'color: {dark}')
-            
+
+    def insufficientMaterial(self) -> None:
+        self.checkmatewidget.show()
+        self.checkmatewidget.load('main/images/insufficientmaterial.svg')
+
+    def fiftymove(self) -> None:
+        self.checkmatewidget.show()
+        self.checkmatewidget.load('main/images/stalemate.svg')
 
     def pawnPromotion(self, piececolor) -> None:
         if self.pawnpromote is False:
@@ -395,6 +422,14 @@ class UI(object):
     def checkmate(self, color) -> None:
         self.checkmatewidget.show()
         self.checkmatewidget.load(f'main/images/{color}checkmate.svg')
+
+    def resign(self, color) -> None:
+        self.checkmatewidget.show()
+        self.checkmatewidget.load(f'main/images/{color}resignation.svg')
+
+    def draw(self) -> None:
+        self.checkmatewidget.show()
+        self.checkmatewidget.load('main/images/drawn.svg')
 
     def checkmateWidget(self) -> None:
         self.checkmatewidget = QSvgWidget(self.chessboard)
@@ -486,6 +521,10 @@ class UI(object):
     def stalemate(self) -> None:
         self.checkmatewidget.show()
         self.checkmatewidget.load('main/images/stalemate.svg')
+
+    def repetition(self) -> None:
+        self.checkmatewidget.show()
+        self.checkmatewidget.load('main/images/repetitiondraw.svg')
 
     def NotationLabel(self, parent, index: int, text: str) -> QLabel:
         label = QLabel(parent)

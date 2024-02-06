@@ -48,6 +48,9 @@ class SubWindow(QWidget):
         self.move_log_pointer = 0
         self.current_notation = None
         self.current_log = []
+        self.board_position_history = []
+        self.to_resign = None
+        self.will_promote = False
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -77,9 +80,12 @@ class SubWindow(QWidget):
         self.ui.save_button.installEventFilter(self)
         self.ui.settings_button.installEventFilter(self)
         self.ui.exit_button.installEventFilter(self)
+        self.ui.resign_button.installEventFilter(self)
+        self.ui.draw_button.installEventFilter(self)
 
         self.ui.player1_time.setText(self.convertTime(self.clock1))
         self.ui.player2_time.setText(self.convertTime(self.clock2))
+        # Default position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
         self.importFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
 
         if self.player1_color == 'white':
@@ -93,9 +99,12 @@ class SubWindow(QWidget):
             self.ui.player1_label.setStyleSheet('color: #404040')
             self.ui.player1_time.setStyleSheet('color: #404040')
 
+        self.board_position_history.append(self.saveBoardPosition())
+
     # Open confirmation window
-    def openConfirmation(self) -> None:
+    def openConfirmation(self, conf) -> None:
         if not self.windowstack:
+            self.confirmwindow.setConfirmation(conf)
             self.confirmwindow.show()
             self.windowstack.append(self.confirmwindow)
         else:
@@ -122,6 +131,10 @@ class SubWindow(QWidget):
             self.ui.exit_button.load('main/images/exit-hover.svg')
         if index == 3:
             self.ui.settings_button.load('main/images/settings-hover.svg')
+        if index == 4:
+            self.ui.resign_button.load('main/images/resign-hover.svg')
+        if index == 5:
+            self.ui.draw_button.load('main/images/draw-hover.svg')
     
     # If cursor leaves widget
     def buttonUnHover(self, index) -> None:
@@ -129,6 +142,10 @@ class SubWindow(QWidget):
             self.ui.exit_button.load('main/images/exit.svg')
         if index == 2:
             self.ui.settings_button.load('main/images/settings.svg')
+        if index == 3:
+            self.ui.resign_button.load('main/images/resign.svg')
+        if index == 4:
+            self.ui.draw_button.load('main/images/draw.svg')
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Enter:
@@ -138,11 +155,19 @@ class SubWindow(QWidget):
                 self.buttonHover(2)
             elif obj.objectName() == 'Settings':
                 self.buttonHover(3)
+            elif obj.objectName() == 'Resign':
+                self.buttonHover(4)
+            elif obj.objectName() == 'Draw':
+                self.buttonHover(5)
         elif event.type() == QEvent.Leave:
             if obj.objectName() == 'Exit':
                 self.buttonUnHover(1)
             elif obj.objectName() == 'Settings':
                 self.buttonUnHover(2)
+            elif obj.objectName() == 'Resign':
+                self.buttonUnHover(3)
+            elif obj.objectName() == 'Draw':
+                self.buttonUnHover(4)
         elif event.type() == QEvent.MouseButtonPress:
                 if obj.objectName() == 'View':
                     self.ui.checkmatewidget.hide()
@@ -154,7 +179,11 @@ class SubWindow(QWidget):
                 elif obj.objectName() == 'Settings':
                     self.openPreferences()
                 elif obj.objectName() == 'Exit':
-                    self.openConfirmation()
+                    self.openConfirmation(0)
+                elif obj.objectName() == 'Resign':
+                    self.openConfirmation(1)
+                elif obj.objectName() == 'Draw':
+                    self.openConfirmation(2)
         return False
 
     def pawnPromoteRequest(self, piecename) -> None:
@@ -192,10 +221,26 @@ class SubWindow(QWidget):
                         break
                 else:
                     continue
+        
+        # Add to move log
+        ref = {'rook': 'R', 'bishop': 'B', 'queen': 'Q', 'knight': 'N'}
+        self.current_notation += '/' + ref[piecename]
+        if pawninfo[1] == 'white':
+            self.current_log.append(self.current_notation)
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.current_log.append(self.current_notation)
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
 
         self.occupied = False
         self.promotion = True
         self.pawn_promote = None
+        self.will_promote = False
+        self.insufficientMaterialCheck()
 
     def returnKingPosition(self) -> dict:
         x = self.kingpos
@@ -289,6 +334,32 @@ class SubWindow(QWidget):
         else:
             notation = identifier + notation
         return notation
+
+    def saveBoardPosition(self) -> list:
+        'Provides a way to save and compare board positions for repetition rules'
+        board_position = []
+        for i in range(64):
+            widget = self.ui.piece_layout.itemAt(i).widget()
+            widgetinfo = widget.pieceInformation()
+            board_position.append(widgetinfo)
+        return board_position
+
+    def threefoldRepetition(self) -> None:
+        'Checks for threefold repetition by managing the stack of the last three moves'
+        self.board_position_history.append(self.saveBoardPosition())
+
+        # Threefold repetition check
+        for position in self.board_position_history:
+            if self.board_position_history.count(position) == 3:
+                self.occupied = True
+                self.s_end.play()
+                self.timer1.stop()
+                self.timer2.stop()
+                self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+                self.ui.repetition()
 
     # Returns new FEN string
     def exportFEN(self) -> str:
@@ -762,6 +833,16 @@ class SubWindow(QWidget):
         self.timer1.stop()
         self.timer2.stop()
         self.ui.timeloss(flip[color])
+        if color == 'white':
+            self.current_log.append('0-1')
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.current_log.append('1-0')
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
 
     def stalemate(self):
         'Function to execute when there is a stalemate'
@@ -774,6 +855,98 @@ class SubWindow(QWidget):
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')
         self.ui.player2_label.setStyleSheet('color: #FFFFFF')
         self.ui.stalemate()
+        if self.active_color == 'w':
+            self.current_log.append('==')
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.current_log.append('==')
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
+
+    def fiftymove(self) -> None:
+        'Function to execute when there is a draw via fifty-move rule'
+        self.occupied = True
+        self.s_end.play()
+        self.timer1.stop()
+        self.timer2.stop()
+        self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+        self.ui.fiftymove()
+        if self.active_color == 'w':
+            self.current_log.append('==')
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.current_log.append('==')
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
+
+    def insufficientMaterialCheck(self) -> None:
+        'Checks to see if a draw can be called due to insufficient material on the board'
+        all_pieces = []
+        all_pieces_withdata = []
+        for i in range(64):
+            piece = self.ui.piece_layout.itemAt(i).widget()
+            pieceinfo = piece.pieceInformation()
+            if pieceinfo[0] is not None:
+                all_pieces.append(pieceinfo[0])
+                all_pieces_withdata.append(pieceinfo)
+        
+        # King versus king
+        if len(all_pieces) == 2:
+            self.insufficientMaterial()
+        # King and knight versus king
+        elif (len(all_pieces) == 3) and ('knight' in all_pieces):
+            self.insufficientMaterial()
+        # King and bishop versus king
+        elif (len(all_pieces) == 3) and ('bishop' in all_pieces):
+            self.insufficientMaterial()
+        # King a bishop versus a king and a bishop, with bishops of the same color
+        elif (len(all_pieces) == 4) and (all_pieces.count('bishop') == 2):
+            light_tiles = []
+            for row, rank in enumerate('12345678'):
+                for col, file in enumerate('abcdefgh'):
+                    if row % 2 == col % 2:
+                        light_tiles.append(file+rank)
+
+            bishops = []
+            for i, piece in enumerate(all_pieces):
+                if piece == 'bishop':
+                    bishops.append(all_pieces_withdata[i])
+            if (bishops[0][1] != bishops[1][1]):
+                if (bishops[0][2] in light_tiles) and (bishops[1][2] in light_tiles):
+                    self.insufficientMaterial()
+                elif (bishops[0][2] not in light_tiles) and (bishops[1][2] not in light_tiles):
+                    self.insufficientMaterial()
+        
+    def insufficientMaterial(self) -> None:
+        'Function to execute when there is a draw via insufficient material'
+        self.occupied = True
+        self.s_end.play()
+        self.timer1.stop()
+        self.timer2.stop()
+        self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+        self.ui.insufficientMaterial()
+        if self.active_color == 'w':
+            self.current_log.append('==')
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.current_log.append('==')
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
 
     # Moves piece
     def movePiece(self, piece, target) -> None:
@@ -892,6 +1065,8 @@ class SubWindow(QWidget):
                     targetenpassant = self.convertToPieceLayoutPos(enpassant)
                     capturepiece = self.ui.piece_layout.itemAtPosition(targetenpassant[0], targetenpassant[1]).widget()
                     enpassant = self.convertSquareNotation(enpassant)
+                    captureinfo = capturepiece.pieceInformation()
+                    self.ui.capturePiece(captureinfo[1], captureinfo[0])
                     capturepiece.setPieceInformation(None, None, enpassant)
                     if self.blindfold is False:
                         capturepiece.pieceShow()
@@ -908,8 +1083,10 @@ class SubWindow(QWidget):
                 pawnrank = self.convertSquareNotation(targetinfo[2])[1]
                 if (targetinfo[1] == 'white') and (pawnrank == 8):
                     self.showPawnPromotion(target, 'white')
+                    self.will_promote = True
                 elif (targetinfo[1] == 'black') and (pawnrank == 1):
                     self.showPawnPromotion(target, 'black')
+                    self.will_promote = True
 
             # Check highlight
             possiblechecks = self.calculateValidSquares(target)
@@ -952,16 +1129,24 @@ class SubWindow(QWidget):
                 self.player1_color = 'white'
                 self.active_color = 'w'
             self.stalemateCheck()
-            if targetinfo[1] == 'white':
-                self.current_log.append(self.current_notation)
-                self.move_log_pointer += 1
-                self.move_log[self.move_log_pointer] = self.current_log[0]
-                self.updateMoveLog(False)
-            else:
-                self.current_log.append(self.current_notation)
-                self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
-                self.current_log = []
-                self.updateMoveLog(True)
+
+            if self.will_promote is False:
+                if targetinfo[1] == 'white':
+                    self.current_log.append(self.current_notation)
+                    self.move_log_pointer += 1
+                    self.move_log[self.move_log_pointer] = self.current_log[0]
+                    self.updateMoveLog(False)
+                else:
+                    self.current_log.append(self.current_notation)
+                    self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+                    self.current_log = []
+                    self.updateMoveLog(True)
+
+            self.threefoldRepetition()
+            if self.halfmove_clock == 50:
+                self.fiftymove()
+            self.insufficientMaterialCheck()
+
             # First move
             if not self.firstmove:
                 self.timeController()
@@ -1411,12 +1596,58 @@ class SubWindow(QWidget):
         for window in self.windowstack:
             window.close()
 
+    def resignRequest(self) -> None:
+        'Function executed when user resigns'
+        self.occupied = True
+        self.s_end.play()
+        self.timer1.stop()
+        self.timer2.stop()
+        self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+        if self.active_color == 'w':
+            self.ui.resign('white')
+            self.current_log.append('0-1')
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.ui.resign('black')
+            self.current_log.append('1-0')
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
+        self.is_checkmate = True
+
+    def drawRequest(self) -> None:
+        'Function executed when user requests to draw'
+        self.occupied = True
+        self.s_end.play()
+        self.timer1.stop()
+        self.timer2.stop()
+        self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+        self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+        self.ui.draw()
+        if self.active_color == 'w':
+            self.current_log.append('==')
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.current_log.append('==')
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
 
 class ConfirmWindow(QMainWindow):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
         self.ui = chessboardui.UI_ConfirmWindow()
+        self.confirmation = 0
 
         self.render()
 
@@ -1426,8 +1657,8 @@ class ConfirmWindow(QMainWindow):
         self.setFixedSize(318, 145)
         self.setWindowTitle('Confirm')
 
-        self.ui.yes_button.clicked.connect(self.closeWindow)
-        self.ui.no_button.clicked.connect(self.closeWindow)
+        self.ui.yes_button.clicked.connect(self.processYes)
+        self.ui.no_button.clicked.connect(self.processNo)
 
     def closeWindow(self) -> None:
         self.close()
@@ -1437,6 +1668,33 @@ class ConfirmWindow(QMainWindow):
     def closeEvent(self, event: QCloseEvent):
         self.parent.windowstack.pop()
         return super().closeEvent(event)
+    
+    def setConfirmation(self, conf) -> None:
+        self.confirmation = conf
+        if self.confirmation == 0:
+            self.ui.heading.setText('Save game before exiting?')
+        if self.confirmation == 1:
+            self.ui.heading.setText('Resign from current game?')
+        if self.confirmation == 2:
+            self.ui.heading.setText('Draw the current game?')
+
+    def processYes(self) -> None:
+        if self.confirmation == 0:
+            self.closeWindow()
+        elif self.confirmation == 1:
+            self.parent.resignRequest()
+            self.close()
+        elif self.confirmation == 2:
+            self.parent.drawRequest()
+            self.close()
+    
+    def processNo(self) -> None:
+        if self.confirmation == 0:
+            self.closeWindow()
+        elif self.confirmation == 1:
+            self.close()
+        elif self.confirmation == 2:
+            self.close()
 
 
 class PreferencesWindow(QMainWindow):
