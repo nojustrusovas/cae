@@ -254,7 +254,7 @@ class UI(object):
 
         self.player1_label = QLabel(chessboard)
         self.player1_label.setText('Player 1')
-        self.player1_label.setGeometry(QRect(37, 636, 58, 16))
+        self.player1_label.setGeometry(QRect(37, 636, 130, 20))
         self.player1_label.setFont(font)
 
         self.player1_time = QLabel(chessboard)
@@ -265,12 +265,12 @@ class UI(object):
         # Player 2
         self.player2_label = QLabel(chessboard)
         self.player2_label.setText('Player 2')
-        self.player2_label.setGeometry(QRect(37, 37, 58, 16))
+        self.player2_label.setGeometry(QRect(37, 37, 130, 20))
         self.player2_label.setFont(font)
 
         self.engine_sublabel = QLabel(chessboard)
         self.engine_sublabel.setText('depth 2')
-        self.engine_sublabel.setGeometry(QRect(80, 31, 58, 16))
+        self.engine_sublabel.setGeometry(QRect(80, 31, 58, 20))
         self.engine_sublabel.setFont(font3)
         self.engine_sublabel.hide()
 

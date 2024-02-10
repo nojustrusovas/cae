@@ -3,6 +3,7 @@
 from PySide6.QtWidgets import QWidget, QMainWindow, QStackedWidget
 from PySide6.QtGui import QCloseEvent
 from subwindows.ui import newgameui
+from random import choice
 
 
 class SubWindow(QWidget):
@@ -28,7 +29,7 @@ class SubWindow(QWidget):
         self.ui.fen_checkbox.toggled.connect(self.stateChange)
 
     # Update window data
-    def refresh(self) -> None:
+    def refresh(self, data) -> None:
         self.parent.setFixedSize(463, 362)
         self.parent.setWindowTitle('Game configuration')
 
@@ -75,11 +76,32 @@ class SubWindow(QWidget):
                 enginedepth = None
 
             timeformat = self.ui.time_combo.currentIndex()
+            if timeformat == 0:
+                time = None
+            elif timeformat == 1:
+                time = 1800
+            elif timeformat == 2:
+                time = 600
+            elif timeformat == 3:
+                time = 300
+            elif timeformat == 4:
+                time = 120
+            elif timeformat == 5:
+                time = 60
+
             defaultcolor = self.ui.startas_combo.currentIndex()
+            if defaultcolor == 0:
+                player1_color = choice(['white', 'black'])
+            elif defaultcolor == 1:
+                player1_color = 'white'
+            elif defaultcolor == 2:
+                player1_color = 'black'
 
             self.configurations = (gametype, enginetype, enginedepth, rotateboard,
-                                   player1_name, player2_name, timeformat, defaultcolor, fen)
+                                   player1_name, player2_name, time,  player1_color, fen)
+            # configurations currently not in use: gametype, enginetype, enginedepth, rotateboard
             
+            self.parent.setData(self.configurations)
             self.parent.setCurrentSubwindow(2)
 
     # Close all open windows before changing sub window

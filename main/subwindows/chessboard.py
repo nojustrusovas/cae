@@ -24,16 +24,15 @@ class SubWindow(QWidget):
         self.occupied: bool = False
         self.firstmove: bool = False
         self.movelogflag: bool = False
-        self.clock1: int = 500
+        self.clock1: int = None
         self.clock1_active: bool = False
-        self.clock2: int = 500
+        self.clock2: int = None
         self.clock2_active: bool = False
         self.highlight: str = '#B0A7F6'
         self.highlight2: str = '#A49BE8'
         self.active_tile: bool = None
         self.active_piece: bool = None
         self.second_active: bool = None
-        self.player1_color: str = 'white'
         self.hide_highlights = False
         self.hints = []
         self.kingpos: dict = {'white': None, 'black': None}
@@ -84,32 +83,6 @@ class SubWindow(QWidget):
         self.ui.draw_button.installEventFilter(self)
         self.ui.copyfen_button.installEventFilter(self)
 
-        self.ui.player1_time.setText(self.convertTime(self.clock1))
-        self.ui.player2_time.setText(self.convertTime(self.clock2))
-        # Default position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-        self.importFEN('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1')
-        if self.active_color == 'b':
-            self.player1_color = 'black'
-            self.current_log.append('-')
-            self.move_log_pointer += 1
-            self.move_log[self.move_log_pointer] = self.current_log[0]
-            self.updateMoveLog(False)
-        else:
-            self.player1_color = 'white'
-
-        if self.player1_color == 'white':
-            self.ui.player1_label.setStyleSheet('color: #FFFFFF')
-            self.ui.player1_time.setStyleSheet('color: #FFFFFF')
-            self.ui.player2_label.setStyleSheet('color: #404040')
-            self.ui.player2_time.setStyleSheet('color: #404040')
-        else:
-            self.ui.player2_label.setStyleSheet('color: #FFFFFF')
-            self.ui.player2_time.setStyleSheet('color: #FFFFFF')
-            self.ui.player1_label.setStyleSheet('color: #404040')
-            self.ui.player1_time.setStyleSheet('color: #404040')
-
-        self.board_position_history.append(self.saveBoardPosition())
-
     # Open confirmation window
     def openConfirmation(self, conf) -> None:
         if not self.windowstack:
@@ -128,9 +101,63 @@ class SubWindow(QWidget):
             self.preferenceswindow.close()
 
     # Update window data
-    def refresh(self) -> None:
+    def refresh(self, data) -> None:
         self.parent.setFixedSize(1000, 700)
         self.parent.setWindowTitle('Chessboard')
+        self.board_position_history = []
+        self.current_log = []
+        self.move_log = {}
+        self.move_log_pointer = 0
+        self.clock1_active: bool = False
+        self.clock2_active: bool = False
+        self.occupied: bool = False
+        self.firstmove: bool = False
+        self.movelogflag: bool = False
+
+        # Set chessboard configurations
+        configurations = data
+        if configurations is None:
+            return
+        else:
+            self.player1_name = configurations[4]
+            self.player2_name = configurations[5]
+            if configurations[6] is not None:
+                self.clock1 = configurations[6]
+                self.clock2 = configurations[6]
+                self.no_time_limit = False
+            else:
+                self.noTimeLimit()
+            self.player1_color =  configurations[7]
+
+            self.importFEN(configurations[8])
+
+            if not self.no_time_limit:
+                self.ui.player1_time.setText(self.convertTime(self.clock1))
+                self.ui.player2_time.setText(self.convertTime(self.clock2))
+            self.ui.player1_label.setText(self.player1_name)
+            self.ui.player2_label.setText(self.player2_name)
+        
+            if self.active_color == 'b':
+                self.player1_color = 'black'
+                self.current_log.append('-')
+                self.move_log_pointer += 1
+                self.move_log[self.move_log_pointer] = self.current_log[0]
+                self.updateMoveLog(False)
+            else:
+                self.player1_color = 'white'
+
+            if self.player1_color == 'white':
+                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_label.setStyleSheet('color: #404040')
+                self.ui.player2_time.setStyleSheet('color: #404040')
+            else:
+                self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_label.setStyleSheet('color: #404040')
+                self.ui.player1_time.setStyleSheet('color: #404040')
+
+            self.board_position_history.append(self.saveBoardPosition())
 
     # If cursor hovers over widget
     def buttonHover(self, index) -> None:
@@ -204,6 +231,12 @@ class SubWindow(QWidget):
                 elif obj.objectName() == 'Copy FEN':
                     self.copyFEN()
         return False
+
+    def noTimeLimit(self) -> None:
+        'Sets up game to work without time limit'
+        self.no_time_limit = True
+        self.ui.player1_time.hide()
+        self.ui.player2_time.hide()
 
     def pawnPromoteRequest(self, piecename) -> None:
         pawninfo = self.pawn_promote.pieceInformation()
@@ -635,31 +668,33 @@ class SubWindow(QWidget):
 
     # Updates timer 1 for timeController
     def update1(self):
-        self.clock1 -= 1
-        self.ui.player1_time.setText(self.convertTime(self.clock1))
+        if not self.no_time_limit:
+            self.clock1 -= 1
+            self.ui.player1_time.setText(self.convertTime(self.clock1))
 
-        if self.clock1 == 0:
-            self.timer1.stop()
-            self.occupied = True
-            self.timeloss(self.player1_color)
-            self.ui.player1_time.setStyleSheet('color: #FF4848')
-            self.ui.player1_label.setStyleSheet('color: #FFFFFF')
-            self.ui.player2_time.setStyleSheet('color: #FFFFFF')
-            self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+            if self.clock1 == 0:
+                self.timer1.stop()
+                self.occupied = True
+                self.timeloss(self.player1_color)
+                self.ui.player1_time.setStyleSheet('color: #FF4848')
+                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_label.setStyleSheet('color: #FFFFFF')
 
     # Updates timer 2 for timeController
     def update2(self):
-        self.clock2 -= 1
-        self.ui.player2_time.setText(self.convertTime(self.clock2))
+        if not self.no_time_limit:
+            self.clock2 -= 1
+            self.ui.player2_time.setText(self.convertTime(self.clock2))
 
-        if self.clock2 == 0:
-            self.timer2.stop()
-            self.occupied = True
-            self.timeloss(self.player1_color)
-            self.ui.player2_time.setStyleSheet('color: #FF4848')
-            self.ui.player2_label.setStyleSheet('color: #FFFFFF')
-            self.ui.player1_time.setStyleSheet('color: #FFFFFF')
-            self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+            if self.clock2 == 0:
+                self.timer2.stop()
+                self.occupied = True
+                self.timeloss(self.player1_color)
+                self.ui.player2_time.setStyleSheet('color: #FF4848')
+                self.ui.player2_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
 
     # Controls the countdown and functionality of the timers
     def timeController(self) -> None:
@@ -669,14 +704,16 @@ class SubWindow(QWidget):
         self.timer2.timeout.connect(self.update2)
         if not self.firstmove:
             if self.player1_color == 'white':
-                self.timer1.start(1000)
+                if not self.no_time_limit:
+                    self.timer1.start(1000)
                 self.clock1_active = True
                 self.ui.player1_label.setStyleSheet('color: #FFFFFF')
                 self.ui.player1_time.setStyleSheet('color: #FFFFFF')
                 self.ui.player2_label.setStyleSheet('color: #404040')
                 self.ui.player2_time.setStyleSheet('color: #404040')
             else:
-                self.timer2.start(1000)
+                if not self.no_time_limit:
+                    self.timer2.start(1000)
                 self.clock2_active = True
                 self.ui.player2_label.setStyleSheet('color: #FFFFFF')
                 self.ui.player2_time.setStyleSheet('color: #FFFFFF')
@@ -688,23 +725,25 @@ class SubWindow(QWidget):
         if self.occupied:
             return
         if self.clock1_active:
-            self.timer1.stop()
-            self.timer2.start(1000)
+            if not self.no_time_limit:
+                self.timer1.stop()
+                self.timer2.start(1000)
+                self.clock1 += 1
+                self.ui.player1_time.setText(self.convertTime(self.clock1))
             self.clock1_active = False
             self.clock2_active = True
-            self.clock1 += 1
-            self.ui.player1_time.setText(self.convertTime(self.clock1))
             self.ui.player2_label.setStyleSheet('color: #FFFFFF')
             self.ui.player2_time.setStyleSheet('color: #FFFFFF')
             self.ui.player1_label.setStyleSheet('color: #404040')
             self.ui.player1_time.setStyleSheet('color: #404040')
         elif self.clock2_active:
-            self.timer2.stop()
-            self.timer1.start(1000)
+            if not self.no_time_limit:
+                self.timer2.stop()
+                self.timer1.start(1000)
+                self.clock2 += 1
+                self.ui.player2_time.setText(self.convertTime(self.clock2))
             self.clock1_active = True
             self.clock2_active = False
-            self.clock2 += 1
-            self.ui.player2_time.setText(self.convertTime(self.clock2))
             self.ui.player1_label.setStyleSheet('color: #FFFFFF')
             self.ui.player1_time.setStyleSheet('color: #FFFFFF')
             self.ui.player2_label.setStyleSheet('color: #404040')
@@ -843,8 +882,9 @@ class SubWindow(QWidget):
         flip = {'white': 'black', 'black': 'white'}
         self.occupied = True
         self.s_end.play()
-        self.timer1.stop()
-        self.timer2.stop()
+        if not self.no_time_limit:
+            self.timer1.stop()
+            self.timer2.stop()
         self.ui.player1_time.setStyleSheet('color: #FFFFFF')
         self.ui.player1_label.setStyleSheet('color: #FFFFFF')
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')
@@ -857,8 +897,9 @@ class SubWindow(QWidget):
         flip = {'white': 'black', 'black': 'white'}
         self.occupied = True
         self.s_end.play()
-        self.timer1.stop()
-        self.timer2.stop()
+        if not self.no_time_limit:
+            self.timer1.stop()
+            self.timer2.stop()
         self.ui.timeloss(flip[color])
         if color == 'white':
             self.current_log.append('0-1')
@@ -875,8 +916,9 @@ class SubWindow(QWidget):
         'Function to execute when there is a stalemate'
         self.occupied = True
         self.s_end.play()
-        self.timer1.stop()
-        self.timer2.stop()
+        if not self.no_time_limit:
+            self.timer1.stop()
+            self.timer2.stop()
         self.ui.player1_time.setStyleSheet('color: #FFFFFF')
         self.ui.player1_label.setStyleSheet('color: #FFFFFF')
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')
@@ -897,8 +939,9 @@ class SubWindow(QWidget):
         'Function to execute when there is a draw via fifty-move rule'
         self.occupied = True
         self.s_end.play()
-        self.timer1.stop()
-        self.timer2.stop()
+        if not self.no_time_limit:
+            self.timer1.stop()
+            self.timer2.stop()
         self.ui.player1_time.setStyleSheet('color: #FFFFFF')
         self.ui.player1_label.setStyleSheet('color: #FFFFFF')
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')
@@ -957,8 +1000,9 @@ class SubWindow(QWidget):
         'Function to execute when there is a draw via insufficient material'
         self.occupied = True
         self.s_end.play()
-        self.timer1.stop()
-        self.timer2.stop()
+        if not self.no_time_limit:
+            self.timer1.stop()
+            self.timer2.stop()
         self.ui.player1_time.setStyleSheet('color: #FFFFFF')
         self.ui.player1_label.setStyleSheet('color: #FFFFFF')
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')
@@ -1627,8 +1671,9 @@ class SubWindow(QWidget):
         'Function executed when user resigns'
         self.occupied = True
         self.s_end.play()
-        self.timer1.stop()
-        self.timer2.stop()
+        if not self.no_time_limit:
+            self.timer1.stop()
+            self.timer2.stop()
         self.ui.player1_time.setStyleSheet('color: #FFFFFF')
         self.ui.player1_label.setStyleSheet('color: #FFFFFF')
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')
@@ -1651,8 +1696,9 @@ class SubWindow(QWidget):
         'Function executed when user requests to draw'
         self.occupied = True
         self.s_end.play()
-        self.timer1.stop()
-        self.timer2.stop()
+        if not self.no_time_limit:
+            self.timer1.stop()
+            self.timer2.stop()
         self.ui.player1_time.setStyleSheet('color: #FFFFFF')
         self.ui.player1_label.setStyleSheet('color: #FFFFFF')
         self.ui.player2_time.setStyleSheet('color: #FFFFFF')

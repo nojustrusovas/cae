@@ -15,10 +15,11 @@ class MainWindow(QMainWindow):
         self.application = application
         self.stackedwidget = QStackedWidget()
         self.windowstack: list = []
+        self.data = None
 
         self.setCentralWidget(self.stackedwidget)
         self.instantiateSubwindows()
-        self.setCurrentSubwindow(2)
+        self.setCurrentSubwindow(1)
 
     # Instantiate all sub windows of application
     def instantiateSubwindows(self) -> None:
@@ -34,7 +35,7 @@ class MainWindow(QMainWindow):
         self.windowstack.append(self.stackedwidget.currentIndex())
         self.stackedwidget.currentWidget().closeWindows()
         self.stackedwidget.setCurrentIndex(index)
-        self.stackedwidget.currentWidget().refresh()
+        self.stackedwidget.currentWidget().refresh(self.data)
         print(f'Subwindow change request, {self.stackedwidget.currentWidget()}')
         self.centreWindow()
 
@@ -43,7 +44,7 @@ class MainWindow(QMainWindow):
     def previousSubwindow(self) -> None:
         self.stackedwidget.currentWidget().closeWindows()
         self.stackedwidget.setCurrentIndex(self.windowstack[-1])
-        self.stackedwidget.currentWidget().refresh()
+        self.stackedwidget.currentWidget().refresh(self.data)
         self.windowstack.pop()
         print(f'Subwindow change request, {self.stackedwidget.currentWidget()}')
 
@@ -62,6 +63,9 @@ class MainWindow(QMainWindow):
         centre_point = self.screen().availableGeometry().center()
         frame.moveCenter(centre_point)
         self.move(frame.topLeft())
+
+    def setData(self, data) -> None:
+        self.data = data
 
 # Handles top-level exceptions
 def except_hook(cls, exception, traceback):

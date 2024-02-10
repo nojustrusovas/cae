@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import QCoreApplication, QMetaObject, QRect
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QFrame, QLabel, QLineEdit,
+from PySide6.QtWidgets import (QCheckBox, QComboBox , QLabel, QLineEdit,
                                QPushButton, QSpinBox, QTabWidget, QWidget)
 
 
@@ -33,7 +33,7 @@ class UI(object):
         # Tabs
         self.game_tabs = QTabWidget(newgame)
         self.game_tabs.setObjectName(u"game_tabs")
-        self.game_tabs.setGeometry(QRect(20, 67, 421, 131))
+        self.game_tabs.setGeometry(QRect(20, 47, 421, 151))
         self.game_tabs.setTabPosition(QTabWidget.North)
         self.game_tabs.setTabShape(QTabWidget.Rounded)
         self.game_tabs.setUsesScrollButtons(False)
@@ -79,18 +79,27 @@ class UI(object):
         self.player2_name_label.setGeometry(QRect(203, 40, 91, 31))
         self.player1_name_entry = QLineEdit(self.playertab)
         self.player1_name_entry.setObjectName(u"player1_name_entry")
-        self.player1_name_entry.setGeometry(QRect(33, 70, 141, 21))
+        self.player1_name_entry.setGeometry(QRect(10, 70, 151, 31))
         self.player1_name_entry.setMaxLength(15)
+        self.player1_name_entry.setStyleSheet('QLineEdit {\n	border: 2px solid #474747;\n	border-radius: 15px;\n	color: #FFFFFF;\n	padding-left: 10px;\n	padding-right: 10px;\n	background-color: #393939;\n}')
+        self.player1_name_entry.setPlaceholderText('Player 1')
         self.player2_name_entry = QLineEdit(self.playertab)
         self.player2_name_entry.setObjectName(u"player2_name_entry")
-        self.player2_name_entry.setGeometry(QRect(223, 70, 141, 21))
+        self.player2_name_entry.setGeometry(QRect(200, 70, 151, 31))
         self.player2_name_entry.setMaxLength(15)
+        self.player2_name_entry.setStyleSheet('QLineEdit {\n	border: 2px solid #474747;\n	border-radius: 15px;\n	color: #FFFFFF;\n	padding-left: 10px;\n	padding-right: 10px;\n	background-color: #393939;\n}')
+        self.player2_name_entry.setPlaceholderText('Player 2')       
         self.game_tabs.addTab(self.playertab, "")
 
         # FEN entry
         self.fen_edit = QLineEdit(newgame)
         self.fen_edit.setObjectName(u"fen_edit")
-        self.fen_edit.setGeometry(QRect(240, 235, 191, 21))
+        self.fen_edit.setGeometry(QRect(240, 239, 181, 31))
+        self.fen_edit.setStyleSheet('QLineEdit {\n	border: 2px solid #474747;\n	border-radius: 15px;\n	color: #FFFFFF;\n	padding-left: 10px;\n	padding-right: 10px;\n	background-color: #393939;\n}')
+        font3 = QFont()
+        font3.setPointSize(10)
+        self.fen_edit.setFont(font3)
+        self.fen_edit.setPlaceholderText('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
         self.fen_edit.hide()
         self.fen_checkbox = QCheckBox(newgame)
         self.fen_checkbox.setObjectName(u"fen_checkbox")
@@ -117,15 +126,9 @@ class UI(object):
         self.time_combo.addItem("")
         self.time_combo.addItem("")
         self.time_combo.addItem("")
+        self.time_combo.addItem("")
         self.time_combo.setObjectName(u"time_combo")
         self.time_combo.setGeometry(QRect(110, 210, 103, 32))
-
-        # Divider
-        self.divider = QFrame(newgame)
-        self.divider.setObjectName(u"divider")
-        self.divider.setGeometry(QRect(10, 40, 441, 16))
-        self.divider.setFrameShape(QFrame.HLine)
-        self.divider.setFrameShadow(QFrame.Sunken)
 
         # Newgame and loadgame button
         self.newgame_button = QPushButton(newgame)
@@ -165,7 +168,8 @@ class UI(object):
         self.time_combo.setItemText(1, QCoreApplication.translate("newgame", u"Classic", None))
         self.time_combo.setItemText(2, QCoreApplication.translate("newgame", u"Standard", None))
         self.time_combo.setItemText(3, QCoreApplication.translate("newgame", u"Rapid", None))
-        self.time_combo.setItemText(4, QCoreApplication.translate("newgame", u"Bullet", None))
+        self.time_combo.setItemText(4, QCoreApplication.translate("newgame", u"Blitz", None))
+        self.time_combo.setItemText(5, QCoreApplication.translate("newgame", u"Bullet", None))
 
         self.newgame_button.setText(QCoreApplication.translate("newgame", u"New Game", None))
         self.loadgame_button.setText(QCoreApplication.translate("newgame", u"Load Game", None))

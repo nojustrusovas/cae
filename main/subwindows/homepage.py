@@ -34,7 +34,7 @@ class SubWindow(QWidget):
         #self.ui.practice_button.clicked.connect(self.displayPracticeWindow)
 
     # Update window data
-    def refresh(self) -> None:
+    def refresh(self, data) -> None:
         self.parent.setFixedSize(517, 295)
         self.parent.setWindowTitle('Homepage')
 
