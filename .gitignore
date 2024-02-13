@@ -9,6 +9,7 @@ __pycache__/
 # Testing and design files
 *.ui
 *.ipynb
+logictodo.md
 
 # Distribution / packaging
 .Python

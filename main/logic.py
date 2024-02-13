@@ -9,6 +9,8 @@ class Board:
         self.position_history = []
         self.setBoard(setter)
         self.savePosition()
+        self.checkmate = None
+        self.stalemate = False
 
     # Public Get methods ///
     def board(self) -> list:
@@ -43,7 +45,7 @@ class Board:
         'Returns position history of the board. (Getter)'
         return self.position_history
     def checkState(self, color: str) -> bool:
-        'Returns boolean whether the position is currently in check.'
+        'Returns boolean whether the color is currently in check. (Getter)'
         for piece in self.all_pieces:
             valid_moves = piece.calculatePsuedoLegal()
             for move in valid_moves:
@@ -51,7 +53,16 @@ class Board:
                     if (self.pieceAt(move).name == 'king') and (self.pieceAt(move).color == color):
                         return True
         return False
-    
+    def checkmateState(self, color: str) -> bool:
+        'Returns whether color has been checkmated. (Getter)'
+        if self.checkmate is not None:
+            if self.checkmate == color:
+                return True
+        return False
+    def stalemateState(self) -> bool:
+        'Returns whether position is in stalemate. (Getter)'
+        return self.stalemate
+
     # Public Set methods ///
     def setBoard(self, setter):
         'Replaces board with parameter setter of fen string or board instance. (Setter)'
@@ -59,8 +70,8 @@ class Board:
             self.fen = FEN(setter)
             self.FenToBoard(self.fen)
         elif isinstance(setter, Board):
+            self.copyBoard(setter)
             self.fen = FEN(setter)
-            self.FenToBoard(self.fen)
     def setPiece(self, piece, target):
         'Sets piece at specified position on the board, replacing any existing piece. (Setter)'
         try:
@@ -99,10 +110,10 @@ class Board:
                 file += int(placement)
             elif placement.lower() in piece_ref:
                 if placement.isupper():
-                    piece = Piece(piece_ref[placement.lower()], 'white', self.convertPosType((file, rank)), self)
+                    piece = Piece(piece_ref[placement.lower()], 'white', self.convertPosType((file, rank)), False, self)
                     self.board[file-1][rank-1] = piece
                 else:
-                    piece = Piece(piece_ref[placement], 'black', self.convertPosType((file, rank)), self)
+                    piece = Piece(piece_ref[placement], 'black', self.convertPosType((file, rank)), False, self)
                     self.board[file-1][rank-1] = piece
                 file += 1
         self.updateAllPieces()
@@ -142,37 +153,158 @@ class Board:
                 if self.board[f][r] is not None:
                     all_pieces.append(self.board[f][r])
         self.all_pieces = all_pieces
+    def identifyCheckmate(self, color: str) -> bool:
+        'Private method to check whether color has been checkmated.'
+        for piece in self.all_pieces:
+            if piece.color == color:
+                if piece.legalMoves():
+                    return False
+        if self.checkState(color):
+            return True
+        return False
+    def identifyStalemate(self, colortomove: str) -> bool:
+        'Private method to check for a stalemate.'
+        for piece in self.all_pieces:
+            if piece.color == colortomove:
+                if piece.legalMoves():
+                    return False
+        return True
+    def castlingChecks(self) -> None:
+        'Function that updates castling availability.'
+        castling = list(self.castling_availability)
+        # White castling
+        if self.pieceAt('e1') is None:
+            if 'K' in castling:
+                    castling.pop(castling.index('K'))
+            if 'Q' in castling:
+                castling.pop(castling.index('Q'))
+        elif self.pieceAt('e1').name != 'king':
+            if 'K' in castling:
+                castling.pop(castling.index('K'))
+            if 'Q' in castling:
+                castling.pop(castling.index('Q'))
+        if self.pieceAt('h1') is None:
+            if 'K' in castling:
+                castling.pop(castling.index('K'))
+        elif self.pieceAt('h1').name != 'rook':
+            if 'K' in castling:
+                castling.pop(castling.index('K'))
+        if self.pieceAt('a1') is None:
+            if 'Q' in castling:
+                castling.pop(castling.index('Q'))
+        elif self.pieceAt('a1').name != 'rook':
+            if 'Q' in castling:
+                castling.pop(castling.index('Q'))
+    
+    # Black castling
+        if self.pieceAt('e8') is None:
+            if 'k' in castling:
+                castling.pop(castling.index('k'))
+            if 'q' in castling:
+                castling.pop(castling.index('q'))
+        elif self.pieceAt('e8').name != 'king':
+            if 'k' in castling:
+                castling.pop(castling.index('k'))
+            if 'q' in castling:
+                castling.pop(castling.index('q'))
+        if self.pieceAt('h8') is None:
+            if 'k' in castling:
+                castling.pop(castling.index('k'))
+        elif self.pieceAt('h8').name != 'rook':
+            if 'k' in castling:
+                castling.pop(castling.index('k'))
+        if self.pieceAt('a8') is None:
+            if 'q' in castling:
+                castling.pop(castling.index('q'))
+        elif self.pieceAt('a8').name != 'rook':
+            if 'q' in castling:
+                castling.pop(castling.index('q'))
+        
+        # Update
+        if castling:
+            self.castling_availability = ''.join(castling)
+        else:
+            self.castling_availability = '-'
+    def copyBoard(self, board) -> None:
+        'Function to copy position from another board.'
+        for file in range(8):
+            for rank in range(8):
+                piece = board.board[file][rank]
+                if piece is not None:
+                    self.board[file][rank] = Piece(piece.name, piece.color, piece.pos, piece.has_moved, self)
+                else:
+                    self.board[file][rank] = None
+        self.active_color = board.fen.activeColor()
+        self.castling_availability = board.fen.castlingAvailability()
+        self.enpassant_target = board.fen.enpassantTargetSquare()
+        self.halfmove_clock = board.fen.halfmoveClock()
+        self.fullmove_clock = board.fen.fullmoveClock()
 
     # Control methods ///
     def movePieceRequest(self, piece, target) -> bool:
         'Executes move piece request if valid.'
-        flip = {'w': 'b', 'b': 'w'}
-        if isinstance(target, tuple):
-            target = self.convertPosType(target)
-        if target in piece.legalMoves():
-            # Halfmove clock
-            if (self.pieceAt(target) is not None) or (piece.name == 'pawn'):
-                self.halfmove_clock = 0
-            else:
-                self.halfmove_clock += 1
-            # Move piece
-            self.setPiece(None, piece.pos)
-            self.setPiece(piece, target)
-            self.updateAllPieces()
-            self.savePosition()
-            # Fullmove clock
-            if piece.color == 'black':
-                self.fullmove_clock += 1
-            # Active color
-            self.active_color = flip[self.active_color]
-            # Update fen
-            self.fen.boardToFen(self)
-            return True
+        if (self.checkmate is None) or (self.stalemate):
+            # Setup /
+            flip = {'w': 'b', 'b': 'w'}
+            castling_ref = {'g1': ('h1', 'f1'), 'c1': ('a1', 'd1'), 'g8': ('h8', 'f8'), 'c8': ('a8', 'd8')}
+            if isinstance(target, tuple):
+                target = self.convertPosType(target)
+            if target in piece.legalMoves():
+                
+                # Halfmove clock /
+                if (self.pieceAt(target) is not None) or (piece.name == 'pawn'):
+                    self.halfmove_clock = 0
+                else:
+                    self.halfmove_clock += 1
+
+                # Castle /
+                if piece.name == 'king':
+                    if target in castling_ref:
+                        # Castle
+                        rook = self.pieceAt(castling_ref[target][0])
+                        self.setPiece(None, rook.pos)
+                        self.setPiece(rook, castling_ref[target][1])
+                        rook.setHasMoved(True)
+            
+                # Move Piece /
+                self.setPiece(None, piece.pos)
+                self.setPiece(piece, target)
+                piece.setHasMoved(True)
+                self.updateAllPieces()
+                self.savePosition()
+                self.castlingChecks()
+
+                # Fullmove clock /
+                if piece.color == 'black':
+                    self.fullmove_clock += 1
+                # Active color /
+                self.active_color = flip[self.active_color]
+
+                # Update fen /
+                self.fen.boardToFen(self)
+
+                # Checkmate?
+                if piece.color == 'white':
+                    if self.identifyCheckmate('black'):
+                        self.checkmate = 'black'
+                else:
+                    if self.identifyCheckmate('white'):
+                        self.checkmate = 'white'
+
+                # Stalemate?
+                if self.checkmate is None:
+                    if piece.color == 'white':
+                        if self.identifyStalemate('black'):
+                            self.stalemate = True
+                    else:
+                        if self.identifyStalemate('white'):
+                            self.stalemate = True
+                return True
         return False
 
 class Piece:
-    def __init__(self, name: str, color: str, pos: str, board: Board):
-        self.setAs(name, color, pos, board)
+    def __init__(self, name: str, color: str, pos: str, has_moved: bool, board: Board):
+        self.setAs(name, color, pos, has_moved, board)
     
     # Public Get methods ///
     def name(self) -> str:
@@ -195,13 +327,13 @@ class Piece:
         return (self.name, self.color)
 
     # Public Set methods ///
-    def setAs(self, name: str, color: str, pos: str, board: Board) -> None:
+    def setAs(self, name: str, color: str, pos: str, has_moved: bool, board: Board) -> None:
         'Set or initialise piece attributes. (Setter)'
         self.name: str = name.lower()
         self.color: str = color.lower()
         self.pos: str = pos
         self.board = board
-        self.has_moved: bool = False
+        self.has_moved: bool = has_moved
     def setName(self, name: str) -> None:
         'Sets new name/type of piece as string. (Setter)'
         self.name = name
@@ -386,6 +518,18 @@ class Piece:
                 (pos[0], pos[1]+1),
                 (pos[0], pos[1]-1)
             )
+            # Castling
+            if self.color == 'white':
+                if ('K' in self.board.castling_availability) and (self.board.pieceAt('f1') is None) and (self.board.pieceAt('g1') is None):
+                    temporary_moves.append((pos[0]+2, pos[1]))
+                if ('Q' in self.board.castling_availability) and (self.board.pieceAt('d1') is None) and (self.board.pieceAt('c1') is None) and (self.board.pieceAt('b1') is None):
+                    temporary_moves.append((pos[0]-2, pos[1]))
+            elif self.color == 'black':
+                if ('k' in self.board.castling_availability) and (self.board.pieceAt('f8') is None) and (self.board.pieceAt('g8') is None):
+                    temporary_moves.append((pos[0]+2, pos[1]))
+                if ('q' in self.board.castling_availability) and (self.board.pieceAt('d8') is None) and (self.board.pieceAt('c8') is None) and (self.board.pieceAt('b8') is None):
+                    temporary_moves.append((pos[0]-2, pos[1]))
+
             for offset in offsets:
                 if self.board.pieceAt(offset) is not None:
                     if self.board.pieceAt(offset).color != self.color:
@@ -401,10 +545,18 @@ class Piece:
         return set(final_moves)
     def checkValidation(self, psuedo_legal_moves: set) -> list:
         'Returns new array of legal moves after check validation.'
+        castling_ref = {'g1': ('h1', 'f1'), 'c1': ('a1', 'd1'), 'g8': ('h8', 'f8'), 'c8': ('a8', 'd8')}
         legal_moves = []
         for move in psuedo_legal_moves:
             temporary_board = Board(self.board)
-            clone = Piece(self.name, self.color, self.pos, temporary_board)
+            clone = Piece(self.name, self.color, self.pos, self.has_moved, temporary_board)
+            if clone.name == 'king':
+                    if move in castling_ref:
+                        # Castle
+                        rook = temporary_board.pieceAt(castling_ref[move][0])
+                        temporary_board.setPiece(None, rook.pos)
+                        temporary_board.setPiece(rook, castling_ref[move][1])
+                        rook.setHasMoved(True)
             temporary_board.setPiece(None, clone.pos)
             temporary_board.setPiece(clone, move)
             # If this move does not result in a check, it is legal
@@ -415,7 +567,6 @@ class Piece:
         'Returns array of legal moves, as strings, able to be made by this piece. (Getter)'
         psuedo_legal_moves = self.calculatePsuedoLegal()
         return self.checkValidation(psuedo_legal_moves)
-
 
 class FEN:
     def __init__(self, setter):
@@ -529,3 +680,10 @@ class FEN:
         'Updates the current FEN string upon a section change.'
         self.string = ' '.join(self.sections)
 
+chessboard = Board('rnb1kbnr/pppppppp/8/8/3P1P2/N1P1BN1B/PP1QP1qP/R3K2R b KQkq - 2 1')
+print(chessboard.checkState('white'))
+chessboard.movePieceRequest(chessboard.pieceAt('g2'), 'g1')
+print(chessboard.checkState('white'))
+chessboard.movePieceRequest(chessboard.pieceAt('e1'), 'c1')
+print(chessboard.checkState('white'))
+print(chessboard.fen.string)
