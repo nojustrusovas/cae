@@ -5,6 +5,8 @@ import PySide6.QtCore
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
 from subwindows import homepage, newgameconfig, chessboard
+from engine import ChessEngine
+from logic import Board
 
 
 class MainWindow(QMainWindow):
@@ -13,6 +15,7 @@ class MainWindow(QMainWindow):
         print(f'Initialised Main Window, {self}')
 
         self.application = application
+        self.engine = None
         self.stackedwidget = QStackedWidget()
         self.windowstack: list = []
         self.data = None
@@ -66,6 +69,18 @@ class MainWindow(QMainWindow):
 
     def setData(self, data) -> None:
         self.data = data
+
+    def initEngine(self, type: str, color: str, starting_fen: str, level: int, bullet: bool) -> None:
+        'Initialises the chess engine.'
+        self.engine = ChessEngine(type, level, color, Board(starting_fen), bullet)
+    
+    def requestEngineMove(self) -> str:
+        'Returns the best engine move.'
+        return self.engine.bestMove()
+
+    def updateEngineFen(self, newfen) -> None:
+        'Updates the position for the engine'
+        self.engine.updatePosition(newfen)
 
 # Handles top-level exceptions
 def except_hook(cls, exception, traceback):

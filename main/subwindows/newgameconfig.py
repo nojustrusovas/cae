@@ -59,11 +59,15 @@ class SubWindow(QWidget):
             # Valid configurations to send as data
             gametype = self.ui.game_tabs.currentIndex()
             if gametype == 0:
-                enginetype = 'default'
+                enginetype = self.ui.enginetype_combo.currentIndex()
+                if enginetype == 0:
+                    enginetype = 'stockfish'
+                else:
+                    enginetype = 'classic'
                 enginedepth = self.ui.depth_spin.value()
                 rotateboard = None
                 player1_name = 'Player'
-                player2_name = 'Engine'
+                player2_name = f'Engine, level {enginedepth}'
             else:
                 rotateboard = self.ui.rotate_checkbox.isChecked()
                 player1_name = self.ui.player1_name_entry.text()
@@ -77,16 +81,22 @@ class SubWindow(QWidget):
 
             timeformat = self.ui.time_combo.currentIndex()
             if timeformat == 0:
+                bullet = False
                 time = None
             elif timeformat == 1:
+                bullet = False
                 time = 1800
             elif timeformat == 2:
+                bullet = False
                 time = 600
             elif timeformat == 3:
+                bullet = False
                 time = 300
             elif timeformat == 4:
+                bullet = True
                 time = 120
             elif timeformat == 5:
+                bullet = True
                 time = 60
 
             defaultcolor = self.ui.startas_combo.currentIndex()
@@ -97,11 +107,14 @@ class SubWindow(QWidget):
             elif defaultcolor == 2:
                 player1_color = 'black'
 
+            flip = {'white': 'black', 'black': 'white'}
             self.configurations = (gametype, enginetype, enginedepth, rotateboard,
                                    player1_name, player2_name, time,  player1_color, fen)
-            # configurations currently not in use: gametype, enginetype, enginedepth, rotateboard
+            # configurations currently not in use: rotateboard
             
             self.parent.setData(self.configurations)
+            if gametype == 0:
+                self.parent.initEngine(enginetype, flip[player1_color], fen, enginedepth, bullet)
             self.parent.setCurrentSubwindow(2)
 
     # Close all open windows before changing sub window
@@ -116,54 +129,83 @@ class SubWindow(QWidget):
 
     # Validates custom FEN string
     def validateFEN(self, fen: str) -> bool:
-        fen = fen.strip()
-        fen = fen.split(' ')
-        fen = fen[0]
-
-        # FEN string must contain 7 breaks '/'
-        if fen.count('/') != 7:
-            return False
-        
-        # FEN string should not have a break at the beginning or end
-        if (fen[0] == '/') or (fen[-1] == '/'):
-            return False
-        
-        # FEN string should not have repeated breaks
         try:
-            fen.index('//')
-        except ValueError: # ValueError if no repeated breaks are found
-            pass
-        else:
-            return False
+            fen = fen.strip()
+            fensections = fen.split(' ')
+            fen = fensections[0]
 
-        # FEN string should have a piece value of 8 in each rank
-        valid_chars = ['p', 'r', 'n', 'b', 'q', 'k']
-        fen_segments = fen.split('/')
-        for segment in fen_segments:
-            segment_value = 0
-            chars = list(segment)
-            for char in chars:
-                if char.isalpha():
-                    segment_value += 1
-                    # Check for valid characters
-                    if char.lower() not in valid_chars:
+            # FEN string must contain 7 breaks '/'
+            if fen.count('/') != 7:
+                return False
+            
+            # FEN string should not have a break at the beginning or end
+            if (fen[0] == '/') or (fen[-1] == '/'):
+                return False
+            
+            # FEN string should not have repeated breaks
+            try:
+                fen.index('//')
+            except ValueError: # ValueError if no repeated breaks are found
+                pass
+            else:
+                return False
+
+            # FEN string should have a piece value of 8 in each rank
+            valid_chars = ['p', 'r', 'n', 'b', 'q', 'k']
+            fen_segments = fen.split('/')
+            for segment in fen_segments:
+                segment_value = 0
+                chars = list(segment)
+                for char in chars:
+                    if char.isalpha():
+                        segment_value += 1
+                        # Check for valid characters
+                        if char.lower() not in valid_chars:
+                            return False
+                        
+                    elif char.isnumeric():
+                        segment_value += int(char)
+                        # Check for valid integers
+                        if (int(char) == 0) or (int(char) == 9):
+                            return False
+                    else:
+                        # Prevents non alpha-numeric characters
                         return False
-                    
-                elif char.isnumeric():
-                    segment_value += int(char)
-                    # Check for valid integers
-                    if (int(char) == 0) or (int(char) == 9):
-                        return False
-                else:
-                    # Prevents non alpha-numeric characters
+                
+                # Total value of a row has to equal to 8
+                if segment_value != 8:
                     return False
             
-            # Total value of a row has to equal to 8
-            if segment_value != 8:
+            # Check for a king for both sides
+            if (fen.count('k') != 1) or (fen.count('K') != 1):
                 return False
-        
-        # Check for a king for both sides
-        if (fen.count('k') != 1) or (fen.count('K') != 1):
+
+            # Check for valid active color
+            if fensections[1] not in ['w', 'b']:
+                return False
+            
+            # Check for valid castling
+            if fensections[2] not in ['-', 'K', 'KQ', 'k', 'kq', 'Kk', 'Kq', 'Kkq', 'Qk', 'Qq', 'Qkq', 'KQk', 'KQq', 'KQkq']:
+                return False
+
+            # Check for valid enpassant target square
+            target = fensections[3]
+            if target != '-':
+                if target[0] not in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
+                    return False
+                if target[1] not in [1, 2, 3, 4, 5, 6, 7, 8]:
+                    return False
+            
+            # Check for valid clocks
+            if not fensections[4].isnumeric():
+                return False
+            if not fensections[5].isnumeric():
+                return False
+            if int(fensections[4]) < 0:
+                return False
+            if int(fensections[5]) < 0:
+                return False
+        except:  # noqa: E722
             return False
 
         return True

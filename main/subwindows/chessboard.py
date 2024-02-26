@@ -2,11 +2,20 @@
 
 from PySide6.QtWidgets import QWidget, QMainWindow, QApplication
 from PySide6.QtMultimedia import QSoundEffect
-from PySide6.QtCore import QTimer, Qt, QUrl, QEvent
+from PySide6.QtCore import QTimer, Qt, QUrl, QEvent, QThread
 from PySide6.QtGui import QCloseEvent, QKeyEvent
 from subwindows.ui import chessboardui
 from math import floor
 
+
+class EngineThread(QThread):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+
+    def run(self):
+        'Run expensive operation'
+        self.parent.engineMove()
 
 class SubWindow(QWidget):
     def __init__(self, parent: QMainWindow):
@@ -18,6 +27,7 @@ class SubWindow(QWidget):
         self.preferenceswindow = PreferencesWindow(self)
 
         # Board variables
+        self.gametype = None
         self.mutesound = False
         self.blindfold = False
         self.hidehints = False
@@ -50,6 +60,8 @@ class SubWindow(QWidget):
         self.board_position_history = []
         self.to_resign = None
         self.will_promote = False
+        self.enginereq = (None, None)
+        self.enginedidpromote = False
 
         # Sound variables
         self.s_move = QSoundEffect()
@@ -113,6 +125,9 @@ class SubWindow(QWidget):
         self.occupied: bool = False
         self.firstmove: bool = False
         self.movelogflag: bool = False
+        self.enginetomove = False
+        self.engineactive = False
+        self.enginerequest = None
 
         # Set chessboard configurations
         configurations = data
@@ -134,28 +149,46 @@ class SubWindow(QWidget):
             if not self.no_time_limit:
                 self.ui.player1_time.setText(self.convertTime(self.clock1))
                 self.ui.player2_time.setText(self.convertTime(self.clock2))
-            self.ui.player1_label.setText(self.player1_name)
-            self.ui.player2_label.setText(self.player2_name)
-        
+            if self.player1_color == 'black':
+                self.ui.player2_label.setText(self.player1_name)
+                self.ui.player1_label.setText(self.player2_name)
+            else:
+                self.ui.player1_label.setText(self.player1_name)
+                self.ui.player2_label.setText(self.player2_name)
+
             if self.active_color == 'b':
-                self.player1_color = 'black'
                 self.current_log.append('-')
                 self.move_log_pointer += 1
                 self.move_log[self.move_log_pointer] = self.current_log[0]
                 self.updateMoveLog(False)
-            else:
-                self.player1_color = 'white'
-
-            if self.player1_color == 'white':
-                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
-                self.ui.player1_time.setStyleSheet('color: #FFFFFF')
-                self.ui.player2_label.setStyleSheet('color: #404040')
-                self.ui.player2_time.setStyleSheet('color: #404040')
-            else:
                 self.ui.player2_label.setStyleSheet('color: #FFFFFF')
                 self.ui.player2_time.setStyleSheet('color: #FFFFFF')
                 self.ui.player1_label.setStyleSheet('color: #404040')
                 self.ui.player1_time.setStyleSheet('color: #404040')
+            else:
+                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_label.setStyleSheet('color: #404040')
+                self.ui.player2_time.setStyleSheet('color: #404040')
+
+            if configurations[0] == 0:
+                self.gametype = 'engine'
+                if self.active_color == 'b' and self.player1_color == 'white':
+                    self.engineactive = True
+                    self.engine_thread = EngineThread(self)
+                    self.engine_thread.finished.connect(self.engineMoveRequest)
+                    self.engine_thread.start()
+                elif self.active_color == 'b' and self.player1_color == 'black':
+                    self.engineactive = False
+                elif self.active_color == 'w' and self.player1_color == 'black':
+                    self.engineactive = True
+                    self.engine_thread = EngineThread(self)
+                    self.engine_thread.finished.connect(self.engineMoveRequest)
+                    self.engine_thread.start()
+                elif self.active_color == 'w' and self.player1_color == 'white':
+                    self.engineactive = False
+            else:
+                self.gametype = 'player'
 
             self.board_position_history.append(self.saveBoardPosition())
 
@@ -294,10 +327,40 @@ class SubWindow(QWidget):
         self.will_promote = False
         self.insufficientMaterialCheck()
 
+        if pawninfo[1] == self.player1_color:
+            self.engineactive = True
+            self.engine_thread = EngineThread(self)
+            self.engine_thread.finished.connect(self.engineMoveRequest)
+            self.engine_thread.start()
+        
+        if not self.firstmove:
+            self.timeController()
+            self.firstmove = True
+        self.timeSwitch()
+
     def returnKingPosition(self) -> dict:
         x = self.kingpos
         return x
 
+    def engineMove(self) -> None:
+        'Engine\'s turn to move.'
+        self.parent.updateEngineFen(self.exportFEN())
+        print('processing...')
+        movetomake = self.parent.requestEngineMove()
+        print(f'move to make: {movetomake}')
+
+        # Find piece and target info
+        pos = self.convertSquareNotation(movetomake[0] + movetomake[1])
+        pos = self.convertToPieceLayoutPos(pos)
+        piece = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+        pos = self.convertSquareNotation(movetomake[2] + movetomake[3])
+        pos = self.convertToPieceLayoutPos(pos)
+        target = self.ui.piece_layout.itemAtPosition(pos[0], pos[1]).widget()
+
+        # Make move
+        self.enginereq = (piece, target)
+        #self.movePiece(piece, target, True)
+        
     # Imports FEN string
     def importFEN(self, fen: str) -> None:
         # Splits fen string into sections and sets variables
@@ -413,6 +476,63 @@ class SubWindow(QWidget):
                 self.ui.player2_label.setStyleSheet('color: #FFFFFF')
                 self.ui.repetition()
 
+    def enginePawnPromotion(self, pawn) -> None:
+        'Promotes engine pawn to queen.'
+        self.occupied = True
+        self.pawn_promote = pawn
+        pawninfo = self.pawn_promote.pieceInformation()
+        self.pawn_promote.setPieceInformation('queen', pawninfo[1], pawninfo[2])
+        if self.blindfold is False:
+            self.pawn_promote.pieceShow()
+        if self.mutesound is False:
+            self.s_promote.play()
+        # Game state checks
+        flip = {'white': 'black', 'black': 'white'}
+        possiblechecks = self.calculateValidSquares(self.pawn_promote)
+        oppositeking = flip[pawninfo[1]]
+        if self.check is True:
+            self.check_tile[0].setDefaultColor(self.check_tile[1])
+            self.check_tile[0].resetColor()
+            self.check = False
+        if self.kingpos[oppositeking] in possiblechecks:
+            self.check = True
+            self.checkFunc(flip[pawninfo[1]])
+        else:
+            # Discovered check
+            for i in range(64):
+                widget = self.ui.piece_layout.itemAt(i).widget()
+                widgetinfo = widget.pieceInformation()
+                if widgetinfo[0] is None:
+                    continue
+                if widgetinfo[1] == pawninfo[1]:
+                    checksquares = self.calculateValidSquares(widget)
+                    if self.kingpos[oppositeking] in checksquares:
+                        self.check = True
+                        self.checkFunc(flip[widgetinfo[1]])
+                        print(flip[widgetinfo[1]])
+                        break
+                else:
+                    continue
+        
+        # Add to move log
+        self.current_notation += '/' + 'Q'
+        if pawninfo[1] == 'white':
+            self.current_log.append(self.current_notation)
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+        else:
+            self.current_log.append(self.current_notation)
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
+
+        self.occupied = False
+        self.promotion = True
+        self.pawn_promote = None
+        self.will_promote = False
+        self.insufficientMaterialCheck()
+
     # Returns new FEN string
     def exportFEN(self) -> str:
         sections = []
@@ -420,41 +540,30 @@ class SubWindow(QWidget):
         # Section 1
         piece_ref = {'pawn': 'p', 'rook': 'r', 'bishop': 'b',
                      'knight': 'n','king': 'k', 'queen': 'q'}
-        pieces = []
+        section = []
         empty = 0
-        a = 1
-        rank = 1
-        file = 8
-
-        for i in range(64):
-            if (i+1) == ((a * 8) + 1):
-                if empty > 1:
-                    pieces.append(str(empty))
-                    empty = 0
-                pieces.append('/')
-                file = 8
-                a += 1
-                rank += 1
+        for r in '87654321':
+            for f in 'abcdefgh':
+                position = self.convertSquareNotation(f+r)
+                position = self.convertToPieceLayoutPos(position)
+                piece = self.ui.piece_layout.itemAtPosition(position[0], position[1]).widget()
+                pieceinfo = piece.pieceInformation()
+                if pieceinfo[0] is not None:
+                    if empty:
+                        section.append(str(empty))
+                        empty = 0
+                    if pieceinfo[1] == 'white':
+                        section.append(piece_ref[pieceinfo[0]].upper())
+                    else:
+                        section.append(piece_ref[pieceinfo[0]])
+                else:
+                    empty += 1
+            if empty:
+                section.append(str(empty))
                 empty = 0
-            piecepos = self.convertToPieceLayoutPos((file, rank))
-            piecewidget = self.ui.piece_layout.itemAtPosition(piecepos[0], piecepos[1]).widget()
-            if piecewidget.pieceInformation()[0] is None:
-                empty += 1
-                file -= 1
-                continue
-            piece = piece_ref[piecewidget.pieceInformation()[0]]
-            if piecewidget.pieceInformation()[1] == 'white':
-                piece = piece.upper()
-            if empty != 0:
-                pieces.append(str(empty))
-                empty = 0
-            pieces.append(piece)
-            file -= 1
-
-        fen = ''
-        for char in pieces:
-            fen += char
-        sections.append(fen[::-1])
+            if r != '1':
+                section.append('/')
+        sections.append(''.join(section))
 
         # Section 2
         sections.append(self.active_color)
@@ -703,15 +812,8 @@ class SubWindow(QWidget):
         self.timer1.timeout.connect(self.update1)
         self.timer2.timeout.connect(self.update2)
         if not self.firstmove:
-            if self.player1_color == 'white':
-                if not self.no_time_limit:
-                    self.timer1.start(1000)
-                self.clock1_active = True
-                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
-                self.ui.player1_time.setStyleSheet('color: #FFFFFF')
-                self.ui.player2_label.setStyleSheet('color: #404040')
-                self.ui.player2_time.setStyleSheet('color: #404040')
-            else:
+            if self.active_color == 'b':
+                # Switch to black
                 if not self.no_time_limit:
                     self.timer2.start(1000)
                 self.clock2_active = True
@@ -719,6 +821,15 @@ class SubWindow(QWidget):
                 self.ui.player2_time.setStyleSheet('color: #FFFFFF')
                 self.ui.player1_label.setStyleSheet('color: #404040')
                 self.ui.player1_time.setStyleSheet('color: #404040')
+            else:
+                # Switch to white
+                if not self.no_time_limit:
+                    self.timer1.start(1000)
+                self.clock1_active = True
+                self.ui.player1_label.setStyleSheet('color: #FFFFFF')
+                self.ui.player1_time.setStyleSheet('color: #FFFFFF')
+                self.ui.player2_label.setStyleSheet('color: #404040')
+                self.ui.player2_time.setStyleSheet('color: #404040')
 
     # Switches timers
     def timeSwitch(self) -> None:
@@ -748,8 +859,7 @@ class SubWindow(QWidget):
             self.ui.player1_time.setStyleSheet('color: #FFFFFF')
             self.ui.player2_label.setStyleSheet('color: #404040')
             self.ui.player2_time.setStyleSheet('color: #404040')
-        else:
-            return
+        return
 
     # Executes upon mouse click
     def mousePressEvent(self, event: QKeyEvent) -> None:
@@ -791,9 +901,8 @@ class SubWindow(QWidget):
     # Handles moving and highlighting of pieces
     def moveInputLogic(self, tile, piece) -> None:
         'Moving and highlighting logic called by mousePressEvent().'
-        if self.occupied:
+        if self.occupied or self.engineactive:
             return
-        
         # Resets highlighted tiles after recent move
         if self.second_active is not None:
             if self.active_tile is not None:
@@ -833,12 +942,19 @@ class SubWindow(QWidget):
         elif piece.pieceInformation()[1] != self.player1_color:
             # If a piece is selected, move the piece
             if self.active_tile is not None:
-                movepiece = self.movePiece(self.active_piece, piece)
+                movepiece = self.movePiece(self.active_piece, piece, False)
                 if movepiece:
                     self.second_active = tile
                     if not self.hide_highlights:
                         self.second_active.setStyleSheet(f'background-color: {self.highlight}')
                         self.active_tile.setStyleSheet(f'background-color: {self.highlight2}')
+
+                        # Engine move
+                        if not self.will_promote:
+                            self.engineactive = True
+                            self.engine_thread = EngineThread(self)
+                            self.engine_thread.finished.connect(self.engineMoveRequest)
+                            self.engine_thread.start()
                 else:
                     self.hideHints()
                     self.active_tile.resetColor()
@@ -847,9 +963,24 @@ class SubWindow(QWidget):
         # Deselect tiles
         else:
             self.hideHints()
-            self.active_tile = None
             self.active_tile.resetColor()
+            self.active_tile = None
             self.active_piece = None
+
+    def engineMoveRequest(self):
+        'Executes engine move.'
+        self.hideHints()
+        if self.active_tile is not None:
+            self.active_tile.resetColor()
+        if self.second_active is not None:
+            self.second_active.resetColor()
+        self.second_active = None
+        self.active_tile = None
+        self.active_piece = None
+
+        self.movePiece(self.enginereq[0],self.enginereq[1], False)
+        self.parent.updateEngineFen(self.exportFEN())
+        self.engineactive = False
 
     def checkFunc(self, kingcolor) -> None:
         'Code to run during an active check'
@@ -1020,7 +1151,7 @@ class SubWindow(QWidget):
             self.updateMoveLog(True)
 
     # Moves piece
-    def movePiece(self, piece, target) -> None:
+    def movePiece(self, piece, target, enginereq: bool) -> None:
         'Sets target piece data to the piece that just captured /  moved.'
         flip = {'white': 'black', 'black': 'white'}
         pieceinfo = piece.pieceInformation()
@@ -1059,8 +1190,9 @@ class SubWindow(QWidget):
                     target2.setPieceInformation('rook', 'white', 'f1')
                     if self.blindfold is False:
                         target2.pieceShow()
-                    self.active_tile.resetColor()
-                    self.active_tile = self.ui.board_layout.itemAtPosition(7, 5).widget()
+                    if self.active_tile is not None:
+                        self.active_tile.resetColor()
+                        self.active_tile = self.ui.board_layout.itemAtPosition(7, 5).widget()
                     self.current_notation = 'O-O'
                 # white queenside
                 elif pieceinfo[1] == 'white' and targetinfo[2] == 'c1':
@@ -1072,8 +1204,9 @@ class SubWindow(QWidget):
                     target2.setPieceInformation('rook', 'white', 'd1')
                     if self.blindfold is False:
                         target2.pieceShow()
-                    self.active_tile.resetColor()
-                    self.active_tile = self.ui.board_layout.itemAtPosition(7, 3).widget()
+                    if self.active_tile is not None:
+                        self.active_tile.resetColor()
+                        self.active_tile = self.ui.board_layout.itemAtPosition(7, 3).widget()
                     self.current_notation = 'O-O-O'
                 # black kingside
                 elif pieceinfo[1] == 'black' and targetinfo[2] == 'g8':
@@ -1085,8 +1218,9 @@ class SubWindow(QWidget):
                     target2.setPieceInformation('rook', 'black', 'f8')
                     if self.blindfold is False:
                         target2.pieceShow()
-                    self.active_tile.resetColor()
-                    self.active_tile = self.ui.board_layout.itemAtPosition(0, 5).widget()
+                    if self.active_tile is not None:
+                        self.active_tile.resetColor()
+                        self.active_tile = self.ui.board_layout.itemAtPosition(0, 5).widget()
                     self.current_notation = 'O-O'
                 # black queenside
                 elif pieceinfo[1] == 'black' and targetinfo[2] == 'c8':
@@ -1098,8 +1232,9 @@ class SubWindow(QWidget):
                     target2.setPieceInformation('rook', 'black', 'd8')
                     if self.blindfold is False:
                         target2.pieceShow()
-                    self.active_tile.resetColor()
-                    self.active_tile = self.ui.board_layout.itemAtPosition(0, 3).widget()
+                    if self.active_tile is not None:
+                        self.active_tile.resetColor()
+                        self.active_tile = self.ui.board_layout.itemAtPosition(0, 3).widget()
                     self.current_notation = 'O-O-O'
                 if self.mutesound is False:
                     self.s_castle.play()
@@ -1153,11 +1288,27 @@ class SubWindow(QWidget):
                 # Pawn promotion
                 pawnrank = self.convertSquareNotation(targetinfo[2])[1]
                 if (targetinfo[1] == 'white') and (pawnrank == 8):
-                    self.showPawnPromotion(target, 'white')
-                    self.will_promote = True
+                    if self.gametype == 'engine':
+                        if self.player1_color == 'white':
+                            self.showPawnPromotion(target, 'white')
+                            self.will_promote = True
+                        else:
+                            self.enginePawnPromotion(target)
+                            self.enginedidpromote = True
+                    else:
+                        self.showPawnPromotion(target, 'white')
+                        self.will_promote = True
                 elif (targetinfo[1] == 'black') and (pawnrank == 1):
-                    self.showPawnPromotion(target, 'black')
-                    self.will_promote = True
+                    if self.gametype == 'engine':
+                        if self.player1_color == 'black':
+                            self.showPawnPromotion(target, 'black')
+                            self.will_promote = True
+                        else:
+                            self.enginePawnPromotion(target)
+                            self.enginedidpromote = True
+                    else:
+                        self.showPawnPromotion(target, 'black')
+                        self.will_promote = True
 
             # Check highlight
             possiblechecks = self.calculateValidSquares(target)
@@ -1194,14 +1345,14 @@ class SubWindow(QWidget):
                 self.kingpos[targetinfo[1]] = targetinfo[2]
             # Switch active colour
             if self.active_color == 'w':
-                self.player1_color = 'black'
+                #self.player1_color = 'black'
                 self.active_color = 'b'
             else:
-                self.player1_color = 'white'
+                #self.player1_color = 'white'
                 self.active_color = 'w'
             self.stalemateCheck()
 
-            if self.will_promote is False:
+            if self.will_promote is False and self.enginedidpromote is False:
                 if targetinfo[1] == 'white':
                     self.current_log.append(self.current_notation)
                     self.move_log_pointer += 1
@@ -1217,14 +1368,16 @@ class SubWindow(QWidget):
             if self.halfmove_clock == 50:
                 self.fiftymove()
             self.insufficientMaterialCheck()
+            self.enginedidpromote = False
 
             # First move
-            if not self.firstmove:
-                self.timeController()
-                self.firstmove = True
+            if not enginereq:
+                if not self.firstmove:
+                    self.timeController()
+                    self.firstmove = True
+                    return True
+                self.timeSwitch()
                 return True
-            self.timeSwitch()
-            return True
         else:
             return False
 
@@ -1416,8 +1569,11 @@ class SubWindow(QWidget):
             left_up = (pos[0] - 1, pos[1] + (1*x))
             right_up = (pos[0] + 1, pos[1] + (1*x))
 
-            if (not piece.moved) and (not self.checkObstruction(two_up)) and (not self.checkObstruction(up)):
-                tempvalid.append(two_up)
+            if (not self.checkObstruction(two_up)) and (not self.checkObstruction(up)):
+                if (pieceinfo[1] == 'white') and (int(pieceinfo[2][1]) == 2):
+                    tempvalid.append(two_up)
+                elif (pieceinfo[1] == 'black') and (int(pieceinfo[2][1]) == 7):
+                    tempvalid.append(two_up)
             if not self.checkObstruction(up):
                 tempvalid.append(up)
             if self.checkObstruction(left_up):
@@ -1715,6 +1871,7 @@ class SubWindow(QWidget):
             self.current_log = []
             self.updateMoveLog(True)
 
+
 class ConfirmWindow(QMainWindow):
     def __init__(self, parent):
         super().__init__()
@@ -1768,7 +1925,6 @@ class ConfirmWindow(QMainWindow):
             self.close()
         elif self.confirmation == 2:
             self.close()
-
 
 class PreferencesWindow(QMainWindow):
     def __init__(self, parent):
