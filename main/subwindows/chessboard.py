@@ -134,6 +134,9 @@ class SubWindow(QWidget):
         if configurations is None:
             return
         else:
+            # Init data file for this game
+            self.parent.newANIIL(configurations)
+
             self.player1_name = configurations[4]
             self.player2_name = configurations[5]
             if configurations[6] is not None:
@@ -258,9 +261,11 @@ class SubWindow(QWidget):
                 elif obj.objectName() == 'Exit':
                     self.openConfirmation(0)
                 elif obj.objectName() == 'Resign':
-                    self.openConfirmation(1)
+                    if not self.occupied:
+                        self.openConfirmation(1)
                 elif obj.objectName() == 'Draw':
-                    self.openConfirmation(2)
+                    if not self.occupied:
+                        self.openConfirmation(2)
                 elif obj.objectName() == 'Copy FEN':
                     self.copyFEN()
         return False
@@ -345,9 +350,7 @@ class SubWindow(QWidget):
     def engineMove(self) -> None:
         'Engine\'s turn to move.'
         self.parent.updateEngineFen(self.exportFEN())
-        print('processing...')
         movetomake = self.parent.requestEngineMove()
-        print(f'move to make: {movetomake}')
 
         # Find piece and target info
         pos = self.convertSquareNotation(movetomake[0] + movetomake[1])
@@ -372,6 +375,12 @@ class SubWindow(QWidget):
         self.enpassant_square: str = sections[3]
         self.halfmove_clock: int = int(sections[4])
         self.fullmove_clock: int = int(sections[5])
+
+        # Clear board
+        for i in range(64):
+            widget = self.ui.piece_layout.itemAt(i).widget()
+            widgetinfo = widget.pieceInformation()
+            widget.setPieceInformation(None, None, widgetinfo[2])
 
         # Process piece placement data
         piece_ref = {'p': 'pawn', 'r': 'rook', 'b': 'bishop',
@@ -982,6 +991,19 @@ class SubWindow(QWidget):
         self.parent.updateEngineFen(self.exportFEN())
         self.engineactive = False
 
+        # Engine move highlights
+        pos1 = self.enginereq[0].pieceInformation()
+        pos1 = self.convertSquareNotation(pos1[2])
+        pos1 = self.convertToPieceLayoutPos(pos1)
+        pos2 = self.enginereq[1].pieceInformation()
+        pos2 = self.convertSquareNotation(pos2[2])
+        pos2 = self.convertToPieceLayoutPos(pos2)
+        self.second_active = self.ui.board_layout.itemAtPosition(pos2[0], pos2[1]).widget()
+        self.active_tile = self.ui.board_layout.itemAtPosition(pos1[0], pos1[1]).widget()
+        if not self.hide_highlights:
+            self.second_active.setStyleSheet(f'background-color: {self.highlight}')
+            self.active_tile.setStyleSheet(f'background-color: {self.highlight2}')
+
     def checkFunc(self, kingcolor) -> None:
         'Code to run during an active check'
         self.checked_king = kingcolor
@@ -1352,6 +1374,7 @@ class SubWindow(QWidget):
                 self.active_color = 'w'
             self.stalemateCheck()
 
+            log_to_write = None
             if self.will_promote is False and self.enginedidpromote is False:
                 if targetinfo[1] == 'white':
                     self.current_log.append(self.current_notation)
@@ -1361,6 +1384,7 @@ class SubWindow(QWidget):
                 else:
                     self.current_log.append(self.current_notation)
                     self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+                    log_to_write = f'{self.current_log[0]}/{self.current_log[1]}'
                     self.current_log = []
                     self.updateMoveLog(True)
 
@@ -1369,6 +1393,11 @@ class SubWindow(QWidget):
                 self.fiftymove()
             self.insufficientMaterialCheck()
             self.enginedidpromote = False
+
+            # Save to aniil
+            self.parent.current_data_file.updateFEN(self.exportFEN())
+            if log_to_write is not None:
+                self.parent.current_data_file.writeLog(log_to_write)
 
             # First move
             if not enginereq:

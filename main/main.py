@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
 from subwindows import homepage, newgameconfig, chessboard
 from engine import ChessEngine
 from logic import Board
+import aniil
 
 
 class MainWindow(QMainWindow):
@@ -19,6 +20,7 @@ class MainWindow(QMainWindow):
         self.stackedwidget = QStackedWidget()
         self.windowstack: list = []
         self.data = None
+        self.current_data_file = None
 
         self.setCentralWidget(self.stackedwidget)
         self.instantiateSubwindows()
@@ -81,6 +83,44 @@ class MainWindow(QMainWindow):
     def updateEngineFen(self, newfen) -> None:
         'Updates the position for the engine'
         self.engine.updatePosition(newfen)
+
+    def newANIIL(self, configurations):
+        'Creates a new ANIIL file.'
+        # game state: 0-white to move, 1-black to move, 2-white checkmate, 3-black checkmate, 4-stalemate, 5-draw
+        fen = configurations[8].split(' ')
+        if fen[1] == 'w':
+            game_state = '0'
+        if fen[2] == 'b':
+            game_state = '1'
+        # time formats: 0-none, 1-classic, 2-standard, 3-rapid, 4-blitz, 5-bullet
+        if configurations[6] is None:
+            time_format = '0'
+        elif configurations[6] == 1800:
+            time_format = '1'
+        elif configurations[6] == 600:
+            time_format = '2'
+        elif configurations[6] == 300:
+            time_format = '3'
+        elif configurations[6] == 120:
+            time_format = '4'
+        elif configurations[6] == 60:
+            time_format = '5'
+        # engine: 0-none, >0-depth
+        if configurations[2] is None:
+            engine_depth = '0'
+        else:
+            engine_depth = str(configurations[2])
+        
+        data = ('False', game_state, engine_depth, time_format, configurations[8])
+        self.current_data_file = aniil.ANIIL(None, data)
+    
+    def loadANIIL(self, gameid):
+        'Loads existing ANIIL file.'
+        self.current_data_file = aniil.ANIIL(gameid, None)
+    
+    def getAllGames(self) -> list[str]:
+        'Returns a list of game ID\'s in use.'
+        return aniil.getAllIDS()
 
 # Handles top-level exceptions
 def except_hook(cls, exception, traceback):
