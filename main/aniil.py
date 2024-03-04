@@ -135,7 +135,9 @@ class ANIIL:
             log = log.split('\n')
             logs.append(log[0])
         return logs
-    
+
+# ---
+
 def getAllIDS() -> list[str]:
     'Returns list of all used ID\'s as strings.'
     ids = []

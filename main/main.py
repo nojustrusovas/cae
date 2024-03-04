@@ -4,7 +4,7 @@ import sys
 import PySide6.QtCore
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
-from subwindows import homepage, newgameconfig, chessboard
+from subwindows import homepage, newgameconfig, chessboard, savegamemanager
 from engine import ChessEngine
 from logic import Board
 import aniil
@@ -24,12 +24,12 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.stackedwidget)
         self.instantiateSubwindows()
-        self.setCurrentSubwindow(1)
+        self.setCurrentSubwindow(3)
 
     # Instantiate all sub windows of application
     def instantiateSubwindows(self) -> None:
         self.subwindow_instances = [
-            homepage.SubWindow(self), newgameconfig.SubWindow(self), chessboard.SubWindow(self)
+            homepage.SubWindow(self), newgameconfig.SubWindow(self), chessboard.SubWindow(self), savegamemanager.SubWindow(self)
         ]
 
         for instance in self.subwindow_instances:
