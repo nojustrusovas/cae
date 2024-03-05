@@ -79,6 +79,11 @@ class ANIIL:
             file.writelines(lines)
             file.close()
     
+    def deleteSelf(self) -> None:
+        'Deletes current ANIIL file.'
+        _target_file = _data_folder / f'{self.gameid}.aniil'
+        _target_file.unlink()
+
     # Public access methods ///
 
     def getGameID(self) -> int:

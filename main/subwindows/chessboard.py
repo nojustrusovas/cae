@@ -1949,6 +1949,7 @@ class ConfirmWindow(QMainWindow):
     
     def processNo(self) -> None:
         if self.confirmation == 0:
+            self.parent.parent.deleteANIIL()
             self.closeWindow()
         elif self.confirmation == 1:
             self.close()

@@ -118,6 +118,13 @@ class MainWindow(QMainWindow):
         'Loads existing ANIIL file.'
         self.current_data_file = aniil.ANIIL(gameid, None)
     
+    def deleteANIIL(self) -> None:
+        'Deletes current ANIIL file.'
+        try:
+            self.current_data_file.deleteSelf()
+        except:  # noqa: E722
+            pass
+
     def getAllGames(self) -> list[str]:
         'Returns a list of game ID\'s in use.'
         return aniil.getAllIDS()
