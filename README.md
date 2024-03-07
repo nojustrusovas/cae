@@ -33,7 +33,7 @@ Emphasis on being a presentable final product alongside the application's core f
 <p align="center"><img src="main/images/showcase1.svg" title="Showcase Image 1" width=500 height=auto></p>
 
 ### Saving and loading
-Have the option to continue at a later date or even look over previous games with the saved game manager.
+Have the option to continue at a later date or even look over previous games with the save game manager.
 
 <p align="center"><img src="main/images/showcase3.svg" title="Showcase Image 3" width=500 height=auto></p>
 
