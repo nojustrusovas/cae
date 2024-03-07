@@ -476,6 +476,7 @@ class SubWindow(QWidget):
         for position in self.board_position_history:
             if self.board_position_history.count(position) == 3:
                 self.occupied = True
+                self.parent.completeANIIL()
                 self.s_end.play()
                 self.timer1.stop()
                 self.timer2.stop()
@@ -1034,6 +1035,7 @@ class SubWindow(QWidget):
         'Function called when color is checkmated'
         flip = {'white': 'black', 'black': 'white'}
         self.occupied = True
+        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1049,6 +1051,7 @@ class SubWindow(QWidget):
         'Function called when color loses on time'
         flip = {'white': 'black', 'black': 'white'}
         self.occupied = True
+        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1068,6 +1071,7 @@ class SubWindow(QWidget):
     def stalemate(self):
         'Function to execute when there is a stalemate'
         self.occupied = True
+        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1091,6 +1095,7 @@ class SubWindow(QWidget):
     def fiftymove(self) -> None:
         'Function to execute when there is a draw via fifty-move rule'
         self.occupied = True
+        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1152,6 +1157,7 @@ class SubWindow(QWidget):
     def insufficientMaterial(self) -> None:
         'Function to execute when there is a draw via insufficient material'
         self.occupied = True
+        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1855,6 +1861,7 @@ class SubWindow(QWidget):
     def resignRequest(self) -> None:
         'Function executed when user resigns'
         self.occupied = True
+        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1880,6 +1887,7 @@ class SubWindow(QWidget):
     def drawRequest(self) -> None:
         'Function executed when user requests to draw'
         self.occupied = True
+        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()

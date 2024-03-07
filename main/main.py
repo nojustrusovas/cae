@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.stackedwidget)
         self.instantiateSubwindows()
-        self.setCurrentSubwindow(3)
+        self.setCurrentSubwindow(0)
 
     # Instantiate all sub windows of application
     def instantiateSubwindows(self) -> None:
@@ -50,6 +50,7 @@ class MainWindow(QMainWindow):
         self.stackedwidget.currentWidget().closeWindows()
         self.stackedwidget.setCurrentIndex(self.windowstack[-1])
         self.stackedwidget.currentWidget().refresh(self.data)
+        self.centreWindow()
         self.windowstack.pop()
         print(f'Subwindow change request, {self.stackedwidget.currentWidget()}')
 
@@ -111,7 +112,7 @@ class MainWindow(QMainWindow):
         else:
             engine_depth = str(configurations[2])
         
-        data = ('False', game_state, engine_depth, time_format, configurations[8])
+        data = ('False', game_state, engine_depth, time_format, configurations[8], 'False')
         self.current_data_file = aniil.ANIIL(None, data)
     
     def loadANIIL(self, gameid):
@@ -124,10 +125,22 @@ class MainWindow(QMainWindow):
             self.current_data_file.deleteSelf()
         except:  # noqa: E722
             pass
+        
+    def completeANIIL(self) -> None:
+        'Marks ANIIL file as completed.'
+        self.current_data_file.finishGame()
 
-    def getAllGames(self) -> list[str]:
+    def getAllIDS(self) -> list[str]:
         'Returns a list of game ID\'s in use.'
         return aniil.getAllIDS()
+    
+    def getANIILData(self) -> list:
+        'Returns data from ANIIL.'
+        if self.current_data_file is not None:
+            id = self.current_data_file.getGameID()
+            localtime = list(self.current_data_file.getLocalTime())
+            settings = list(self.current_data_file.getSettings())
+            return [id] + localtime + settings
 
 # Handles top-level exceptions
 def except_hook(cls, exception, traceback):

@@ -33,7 +33,7 @@ class ANIIL:
         local_time = Time.localtime()
         time = f'{local_time[3]}:{local_time[4]}:{local_time[5]}'
         date = f'{local_time[2]}.{local_time[1]}.{local_time[0]}'
-        data_to_write = f'ID: #{self.gameid}\nLOCALTIME: {time}, {date}\nSETTINGS: {data[0]}, {data[1]}, {data[2]}, {data[3]}\nFEN: {data[4]}\nMOVELOG:\n'
+        data_to_write = f'ID: #{self.gameid}\nLOCALTIME: {time}, {date}\nSETTINGS: {data[0]}, {data[1]}, {data[2]}, {data[3]}, {data[5]}\nFEN: {data[4]}\nMOVELOG:\n'
         _target_file = _data_folder / f'{str(self.gameid)}.aniil'
         with _target_file.open('w', encoding='utf-8') as file:
             file.write(data_to_write)
@@ -84,6 +84,21 @@ class ANIIL:
         _target_file = _data_folder / f'{self.gameid}.aniil'
         _target_file.unlink()
 
+    def setSaved(self, bool=True) -> None:
+        _target_file = _data_folder / f'{self.gameid}.aniil'
+        with _target_file.open('r', encoding='utf-8') as file:
+            lines = file.readlines()
+            settings = lines[2]
+            settings = settings.split(',')
+            if bool:
+                settings[4] = 'True'
+            else:
+                settings[4] = 'False'
+            settings = ','.join(settings)
+            file.close()
+        to_replace_with = f'SETTINGS: {settings}'
+        self.replaceLineWith(3, to_replace_with)
+
     # Public access methods ///
 
     def getGameID(self) -> int:
@@ -111,9 +126,9 @@ class ANIIL:
             file.close()
         settings = lines[2][10:]
         settings = settings.split(',')
-        timelimit = settings[3][1:]
-        timelimit = timelimit.split('\n')
-        return (settings[0], settings[1][1:], settings[2][1:], timelimit[0])
+        saved = settings[4][1:]
+        saved = saved.split('\n')
+        return (settings[0], settings[1][1:], settings[2][1:], settings[3][1:], saved[0])
     
     def getFEN(self) -> str:
         'Returns FEN string of game.'
