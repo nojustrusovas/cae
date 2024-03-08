@@ -24,7 +24,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.stackedwidget)
         self.instantiateSubwindows()
-        self.setCurrentSubwindow(3)
+        self.setCurrentSubwindow(0)
 
     # Instantiate all sub windows of application
     def instantiateSubwindows(self) -> None:
@@ -87,12 +87,10 @@ class MainWindow(QMainWindow):
 
     def newANIIL(self, configurations):
         'Creates a new ANIIL file.'
-        # game state: 0-white to move, 1-black to move, 2-white checkmate, 3-black checkmate, 4-stalemate, 5-draw
-        fen = configurations[8].split(' ')
-        if fen[1] == 'w':
-            game_state = '0'
-        if fen[2] == 'b':
-            game_state = '1'
+        if configurations[7] == 'white':
+            p1_color = 'w'
+        else:
+            p1_color = 'b'
         # time formats: 0-none, 1-classic, 2-standard, 3-rapid, 4-blitz, 5-bullet
         if configurations[6] is None:
             time_format = '0'
@@ -113,7 +111,7 @@ class MainWindow(QMainWindow):
             engine_depth = str(configurations[2])
         time = str(configurations[6])
         
-        data = ('False', game_state, engine_depth, time_format, configurations[8], 'False', time)
+        data = ('False', p1_color, engine_depth, time_format, configurations[8], 'False', time)
         self.current_data_file = aniil.ANIIL(None, data)
     
     def loadANIIL(self, gameid):

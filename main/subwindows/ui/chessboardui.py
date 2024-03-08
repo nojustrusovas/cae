@@ -570,6 +570,44 @@ class UI(object):
                 if self.move_log_pointer >= 25:
                     self.scrollarea.ensureVisible(0,99999)
 
+    def clearBoard(self) -> None:
+        flip_digits = {'1': '8', '2': '7', '3': '6', '4': '5',
+                       '5': '4', '6': '3', '7': '2', '8': '1'}
+        for row, rank in enumerate('12345678'):
+            for col, file in enumerate('abcdefgh'):
+                piece = self.piece_layout.itemAtPosition(row, col).widget()
+                piece.setPieceInformation(None, None, file+flip_digits[rank])
+                piece.pieceShow()
+
+                tile = self.board_layout.itemAtPosition(row, col).widget()
+                tile.resetColor()
+
+                hint = self.hint_layout.itemAtPosition(row, col).widget()
+                hint.removeHint()
+
+    def clearLog(self) -> None:
+        for widget in self.scrollarea_contents.children():
+            if isinstance(widget, QLabel):
+                widget.setText('')
+                widget.setStyleSheet(u"background-color: rgba(255, 255, 255, 0)")
+        selected = self.scrollarea_contents.findChild(QLabel, '1')
+        selected.setText('1. -')
+        selected.setStyleSheet(u"background-color: rgba(255, 255, 255, 8)")
+        self.move_log_pointer = 1
+
+    def clearCaptures(self) -> None:
+        for i in range(16):
+            piece = self.black_captured.itemAt(i).widget()
+            piece.setPieceInformation(None, None, None)
+            piece.pieceShow()
+        
+        for i in range(16):
+            piece = self.white_captured.itemAt(i).widget()
+            piece.setPieceInformation(None, None, None)
+            piece.pieceShow()
+        
+        self.black_captured_pointer = 0
+        self.white_captured_pointer = 0
 
 class UI_ConfirmWindow(object):
     def initUI(self, confirmwindow):

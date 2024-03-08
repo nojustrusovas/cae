@@ -195,3 +195,25 @@ def getAllIDS() -> list[str]:
         if _target_file.is_file():
             ids.append(str(i+1))
     return ids
+
+def ANIILToStandardConfig(aniil: ANIIL) -> tuple:
+    'Parses ANIIL file data into format similar to newgameconfig'
+    settings = aniil.getSettings()
+    if settings[2] == '0':
+        # Player vs player
+        gametype = 1
+        player1_name = 'Player 1'
+        player2_name = 'Player 2'
+    else:
+        # vs Engine
+        gametype = 0
+        player1_name = 'Player'
+        player2_name = f'Engine, level {settings[2]}'
+    if settings[1] == 'w':
+        player1_color = 'white'
+    else:
+        player1_color = 'black'
+    fen = aniil.getFEN()
+    times = aniil.getTimes()
+    
+    return (gametype, 'stockfish', int(settings[2]), False, player1_name, player2_name, times[0], player1_color, fen, times[1])

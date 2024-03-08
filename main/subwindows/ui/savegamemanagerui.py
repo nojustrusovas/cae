@@ -134,6 +134,7 @@ class UI(object):
         self.games.pop(index)
         self.gamewidgets.pop(index)
         self.parentgamewidgets.pop(index)
+        self.refreshGames()
     
     def refreshGames(self):
         self.parent.refreshGames()

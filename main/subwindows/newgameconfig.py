@@ -24,6 +24,7 @@ class SubWindow(QWidget):
         self.ui.initUI(self)
 
         self.ui.back_button.clicked.connect(self.parent.previousSubwindow)
+        self.ui.loadgame_button.clicked.connect(self.openSaveGameManager)
         self.ui.help_button.clicked.connect(self.openHelpWindow)
         self.ui.newgame_button.clicked.connect(self.finishConfig)
         self.ui.fen_checkbox.toggled.connect(self.stateChange)
@@ -42,6 +43,9 @@ class SubWindow(QWidget):
         else:
             self.ui.fen_edit.hide()
             self.ui.fen_edit.setText('')
+
+    def openSaveGameManager(self):
+        self.parent.setCurrentSubwindow(3)
 
     # Final validation for new game
     def finishConfig(self):
@@ -109,7 +113,7 @@ class SubWindow(QWidget):
 
             flip = {'white': 'black', 'black': 'white'}
             self.configurations = (gametype, enginetype, enginedepth, rotateboard,
-                                   player1_name, player2_name, time,  player1_color, fen)
+                                   player1_name, player2_name, time,  player1_color, fen, time)
             # configurations currently not in use: rotateboard
             
             self.parent.setData(self.configurations)

@@ -116,6 +116,7 @@ class SubWindow(QWidget):
     def refresh(self, data) -> None:
         self.parent.setFixedSize(1000, 700)
         self.parent.setWindowTitle('Chessboard')
+        self.resetVariables()
         self.board_position_history = []
         self.current_log = []
         self.move_log = {}
@@ -129,6 +130,10 @@ class SubWindow(QWidget):
         self.engineactive = False
         self.enginerequest = None
 
+        self.ui.clearBoard()
+        self.ui.clearLog()
+        self.ui.clearCaptures()
+
         # Set chessboard configurations
         configurations = data
         if configurations is None:
@@ -141,7 +146,7 @@ class SubWindow(QWidget):
             self.player2_name = configurations[5]
             if configurations[6] is not None:
                 self.clock1 = configurations[6]
-                self.clock2 = configurations[6]
+                self.clock2 = configurations[9]
                 self.no_time_limit = False
             else:
                 self.noTimeLimit()
@@ -194,6 +199,44 @@ class SubWindow(QWidget):
                 self.gametype = 'player'
 
             self.board_position_history.append(self.saveBoardPosition())
+
+    def resetVariables(self) -> None:
+        'Resets variables to their init state.'
+        self.gametype = None
+        self.mutesound = False
+        self.blindfold = False
+        self.hidehints = False
+        self.occupied: bool = False
+        self.firstmove: bool = False
+        self.movelogflag: bool = False
+        self.clock1: int = None
+        self.clock1_active: bool = False
+        self.clock2: int = None
+        self.clock2_active: bool = False
+        self.highlight: str = '#B0A7F6'
+        self.highlight2: str = '#A49BE8'
+        self.active_tile: bool = None
+        self.active_piece: bool = None
+        self.second_active: bool = None
+        self.hide_highlights = False
+        self.hints = []
+        self.kingpos: dict = {'white': None, 'black': None}
+        self.check = False
+        self.check_tile = (None, None)
+        self.enpassant_color = None
+        self.pawn_promote = None
+        self.hintname = 'defaulthint'
+        self.hintcapturename = 'defaulthintcapture'
+        self.is_checkmate = False
+        self.move_log = {}
+        self.move_log_pointer = 0
+        self.current_notation = None
+        self.current_log = []
+        self.board_position_history = []
+        self.to_resign = None
+        self.will_promote = False
+        self.enginereq = (None, None)
+        self.enginedidpromote = False
 
     # If cursor hovers over widget
     def buttonHover(self, index) -> None:
@@ -787,7 +830,7 @@ class SubWindow(QWidget):
 
     # Updates timer 1 for timeController
     def update1(self):
-        if not self.no_time_limit:
+        if not self.no_time_limit and self.clock1_active:
             self.clock1 -= 1
             self.ui.player1_time.setText(self.convertTime(self.clock1))
 
@@ -802,7 +845,7 @@ class SubWindow(QWidget):
 
     # Updates timer 2 for timeController
     def update2(self):
-        if not self.no_time_limit:
+        if not self.no_time_limit and self.clock2_active:
             self.clock2 -= 1
             self.ui.player2_time.setText(self.convertTime(self.clock2))
 

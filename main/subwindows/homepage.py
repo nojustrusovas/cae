@@ -49,7 +49,7 @@ class SubWindow(QWidget):
                 if obj.objectName() == 'Play':
                     self.playMethod()
                 elif obj.objectName() == 'Practice':
-                    self.displayPracticeWindow()
+                    pass
                 elif obj.objectName() == 'Quit':
                     self.parent.quitApplication()
         return False
