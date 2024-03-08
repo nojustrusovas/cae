@@ -851,6 +851,7 @@ class SubWindow(QWidget):
                 self.timer2.start(1000)
                 self.clock1 += 1
                 self.ui.player1_time.setText(self.convertTime(self.clock1))
+                self.parent.current_data_file.setTiming(1, self.clock1)
             self.clock1_active = False
             self.clock2_active = True
             self.ui.player2_label.setStyleSheet('color: #FFFFFF')
@@ -863,6 +864,7 @@ class SubWindow(QWidget):
                 self.timer1.start(1000)
                 self.clock2 += 1
                 self.ui.player2_time.setText(self.convertTime(self.clock2))
+                self.parent.current_data_file.setTiming(2, self.clock2)
             self.clock1_active = True
             self.clock2_active = False
             self.ui.player1_label.setStyleSheet('color: #FFFFFF')
@@ -1035,7 +1037,6 @@ class SubWindow(QWidget):
         'Function called when color is checkmated'
         flip = {'white': 'black', 'black': 'white'}
         self.occupied = True
-        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1046,12 +1047,12 @@ class SubWindow(QWidget):
         self.ui.player2_label.setStyleSheet('color: #FFFFFF')
         self.ui.checkmate(flip[color])
         self.is_checkmate = True
+        self.parent.completeANIIL()
     
     def timeloss(self, color):
         'Function called when color loses on time'
         flip = {'white': 'black', 'black': 'white'}
         self.occupied = True
-        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1067,11 +1068,11 @@ class SubWindow(QWidget):
             self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
             self.current_log = []
             self.updateMoveLog(True)
+        self.parent.completeANIIL()
 
     def stalemate(self):
         'Function to execute when there is a stalemate'
         self.occupied = True
-        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1091,11 +1092,11 @@ class SubWindow(QWidget):
             self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
             self.current_log = []
             self.updateMoveLog(True)
+        self.parent.completeANIIL()
 
     def fiftymove(self) -> None:
         'Function to execute when there is a draw via fifty-move rule'
         self.occupied = True
-        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1115,6 +1116,7 @@ class SubWindow(QWidget):
             self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
             self.current_log = []
             self.updateMoveLog(True)
+        self.parent.completeANIIL()
 
     def insufficientMaterialCheck(self) -> None:
         'Checks to see if a draw can be called due to insufficient material on the board'
@@ -1157,7 +1159,6 @@ class SubWindow(QWidget):
     def insufficientMaterial(self) -> None:
         'Function to execute when there is a draw via insufficient material'
         self.occupied = True
-        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1177,6 +1178,7 @@ class SubWindow(QWidget):
             self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
             self.current_log = []
             self.updateMoveLog(True)
+        self.parent.completeANIIL()
 
     # Moves piece
     def movePiece(self, piece, target, enginereq: bool) -> None:
@@ -1861,7 +1863,6 @@ class SubWindow(QWidget):
     def resignRequest(self) -> None:
         'Function executed when user resigns'
         self.occupied = True
-        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1883,11 +1884,11 @@ class SubWindow(QWidget):
             self.current_log = []
             self.updateMoveLog(True)
         self.is_checkmate = True
+        self.parent.completeANIIL()
 
     def drawRequest(self) -> None:
         'Function executed when user requests to draw'
         self.occupied = True
-        self.parent.completeANIIL()
         self.s_end.play()
         if not self.no_time_limit:
             self.timer1.stop()
@@ -1907,6 +1908,7 @@ class SubWindow(QWidget):
             self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
             self.current_log = []
             self.updateMoveLog(True)
+        self.parent.completeANIIL()
 
 
 class ConfirmWindow(QMainWindow):

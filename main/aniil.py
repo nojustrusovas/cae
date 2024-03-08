@@ -33,7 +33,7 @@ class ANIIL:
         local_time = Time.localtime()
         time = f'{local_time[3]}:{local_time[4]}:{local_time[5]}'
         date = f'{local_time[2]}.{local_time[1]}.{local_time[0]}'
-        data_to_write = f'ID: #{self.gameid}\nLOCALTIME: {time}, {date}\nSETTINGS: {data[0]}, {data[1]}, {data[2]}, {data[3]}, {data[5]}\nFEN: {data[4]}\nMOVELOG:\n'
+        data_to_write = f'ID: #{self.gameid}\nLOCALTIME: {time}, {date}\nSETTINGS: {data[0]}, {data[1]}, {data[2]}, {data[3]}, {data[5]}\nTIMING: {data[6]}, {data[6]}\nFEN: {data[4]}\nMOVELOG:\n'
         _target_file = _data_folder / f'{str(self.gameid)}.aniil'
         with _target_file.open('w', encoding='utf-8') as file:
             file.write(data_to_write)
@@ -53,6 +53,7 @@ class ANIIL:
         with _target_file.open('r', encoding='utf-8') as file:
             lines = file.readlines()
             settings = lines[2]
+            settings = settings[10:]
             settings = settings.split(',')
             settings[0] = 'True'
             settings = ','.join(settings)
@@ -66,7 +67,7 @@ class ANIIL:
     def updateFEN(self, newfen) -> None:
         'Updates the fen string of the game.'
         to_replace_with = f'FEN: {newfen}\n'
-        self.replaceLineWith(4, to_replace_with)
+        self.replaceLineWith(5, to_replace_with)
 
     def replaceLineWith(self, line, data) -> None:
         'Replaces specified line with data input.'
@@ -89,15 +90,32 @@ class ANIIL:
         with _target_file.open('r', encoding='utf-8') as file:
             lines = file.readlines()
             settings = lines[2]
+            settings = settings[10:]
             settings = settings.split(',')
             if bool:
-                settings[4] = 'True'
+                settings[4] = ' True\n'
             else:
-                settings[4] = 'False'
+                settings[4] = ' False\n'
             settings = ','.join(settings)
             file.close()
         to_replace_with = f'SETTINGS: {settings}'
         self.replaceLineWith(3, to_replace_with)
+
+    def setTiming(self, index, time: int):
+        _target_file = _data_folder / f'{self.gameid}.aniil'
+        with _target_file.open('r', encoding='utf-8') as file:
+            lines = file.readlines()
+            timing = lines[3]
+            timing = timing[8:]
+            timing = timing.split(',')
+            if index == 1:
+                timing[0] = str(time)
+            elif index == 2:
+                timing[1] = f' {str(time)}\n'
+            timing = ','.join(timing)
+            file.close()
+        to_replace_with = f'TIMING: {timing}'
+        self.replaceLineWith(4, to_replace_with)
 
     # Public access methods ///
 
@@ -155,6 +173,17 @@ class ANIIL:
             log = log.split('\n')
             logs.append(log[0])
         return logs
+
+    def getTimes(self) -> tuple[int]:
+        _target_file = _data_folder / f'{self.gameid}.aniil'
+        with _target_file.open('r', encoding='utf-8') as file:
+            lines = file.readlines()
+            file.close()
+        timing = lines[3][8:]
+        timing = timing.split(',')
+        time2 = timing[1][1:]
+        time2 = time2.split('\n')
+        return (int(timing[0]), int(time2[0]))
 
 # ---
 

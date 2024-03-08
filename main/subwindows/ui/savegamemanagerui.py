@@ -89,6 +89,7 @@ class UI(object):
             self.parentgamewidgets.append(gamewidget)
         self.vertical_layout.setSpacing(12)
         self.scroll_area.setWidget(self.scroll_area_contents)
+        savegamemanager.refreshGames()
     
     def refreshList(self, savegamemanager, ids) -> None:
         # Clear layout
@@ -133,6 +134,9 @@ class UI(object):
         self.games.pop(index)
         self.gamewidgets.pop(index)
         self.parentgamewidgets.pop(index)
+    
+    def refreshGames(self):
+        self.parent.refreshGames()
 
 class GameWidget(QObject):
     def __init__(self, parent, localtime: str, gameid: int, settings: str, savegamemanagerui, savegamemanager, saved: bool):
@@ -167,7 +171,7 @@ class GameWidget(QObject):
         self.localtime_label.setText(localtime)
 
         self.gameid_label = QLabel(self.gamewidget)
-        self.gameid_label.setGeometry(QRect(180, 10, 31, 21))
+        self.gameid_label.setGeometry(QRect(195, 10, 31, 21))
         self.gameid_label.setFont(font1)
         self.gameid_label.setText(f'#{str(gameid)}')
         self.gameid_label.setStyleSheet('color: #8D8D8D')
@@ -295,6 +299,8 @@ class GameWidget(QObject):
                     self.save_icon.load('main/images/save-hover.svg')
                 else:
                     self.save_icon.load('main/images/save-active.svg')
+                self.parent.current_widget = self
+                self.parent.refreshGames()
             elif obj.objectName() == 'Delete':
                 target_index = self.parent.games.index(self.gameid)
                 self.parent.current_widget = self

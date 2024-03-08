@@ -39,11 +39,12 @@ class SubWindow(QWidget):
             ids = self.sortByDate(True)
         elif sort_index == 3:
             ids = self.sortByDate(False)
+        ids = self.sortSaved(ids) # Auto-sort saved to top
         # Handle Filters
         if filter_index == 0:
             pass
         elif filter_index == 1:
-            pass
+            ids = self.filterSaved(ids)
         elif filter_index == 2:
             ids = self.filterCompleted(ids)
         elif filter_index == 3:
@@ -57,14 +58,28 @@ class SubWindow(QWidget):
             gamewidget.installEventFilter(self)
 
     # Sorting algorithms
+    def sortSaved(self, ids) -> list[int]:
+        new = []
+        temp = []
+        # Add saved to top
+        for id in ids:
+            self.parent.loadANIIL(id)
+            data = self.parent.getANIILData()
+            if data[7] == 'True':
+                new.append(id)
+            else:
+                temp.append(id)
+        # Add rest
+        for id in temp:
+            new.append(id)
+        return new
     def sortByID(self, increasing: bool) -> list[int]:
         'Sorts games by their ID in either increasing or decreasing order.'
         original: list[int] = self.parent.getAllIDS()
         if increasing:
             return original
         else:
-            return list(reversed(original))
-        
+            return list(reversed(original))   
     def insertionSort(self, array, index) -> None:
         for step in range(1, len(array)):
             key = array[step][index]
@@ -84,7 +99,6 @@ class SubWindow(QWidget):
                 else:
                     break
             array[j + 1] = key_arr
-
     def sortByDate(self, increasing: bool) -> list[int]:
         'Sorts games by their date in either increasing or decreasing order.'
         original: list[int] = self.parent.getAllIDS()
@@ -142,6 +156,14 @@ class SubWindow(QWidget):
             self.parent.loadANIIL(id)
             data = self.parent.getANIILData()
             if data[5] != '0':
+                new.append(id)
+        return new
+    def filterSaved(self, ids) -> list[int]:
+        new = []
+        for id in ids:
+            self.parent.loadANIIL(id)
+            data = self.parent.getANIILData()
+            if data[7] == 'True':
                 new.append(id)
         return new
 

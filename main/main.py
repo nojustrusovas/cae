@@ -111,8 +111,9 @@ class MainWindow(QMainWindow):
             engine_depth = '0'
         else:
             engine_depth = str(configurations[2])
+        time = str(configurations[6])
         
-        data = ('False', game_state, engine_depth, time_format, configurations[8], 'False')
+        data = ('False', game_state, engine_depth, time_format, configurations[8], 'False', time)
         self.current_data_file = aniil.ANIIL(None, data)
     
     def loadANIIL(self, gameid):
