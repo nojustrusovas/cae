@@ -5,9 +5,9 @@ import PySide6.QtCore
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
 from subwindows import homepage, newgameconfig, chessboard, savegamemanager
-from engine import ChessEngine
-from logic import Board
-import aniil
+from main.modules.engine import ChessEngine
+from main.modules.logic import Board
+import main.modules.aniil as aniil
 
 
 class MainWindow(QMainWindow):

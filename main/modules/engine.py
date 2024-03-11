@@ -1,5 +1,5 @@
 # main/engine.py
-from logic import Board
+from main.modules.logic import Board
 from stockfish import Stockfish
 from random import randint
 
