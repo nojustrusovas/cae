@@ -83,7 +83,11 @@ class UI(object):
                 saved = True
             else:
                 saved = False
-            gamewidget = GameWidget(self.scroll_area_contents, f'{data[1]} - {data[2]}', data[0], f'{completed}, Depth {data[5]}, {time}', self, savegamemanager, saved)
+            if data[5] == '0':
+                depth = 'Two player'
+            else:
+                depth = f'Depth {data[5]}'
+            gamewidget = GameWidget(self.scroll_area_contents, f'{data[1]} - {data[2]}', data[0], f'{completed}, {depth}, {time}', self, savegamemanager, saved)
             self.vertical_layout.addWidget(gamewidget.gamewidget)
             self.gamewidgets.append(gamewidget.gamewidget)
             self.parentgamewidgets.append(gamewidget)
@@ -97,6 +101,7 @@ class UI(object):
             self.vertical_layout.itemAt(i).widget().setParent(None)
         self.gamewidgets = []
         self.parentgamewidgets = []
+        self.games = []
 
         for i in ids:
             savegamemanager.parent.loadANIIL(i)
@@ -121,11 +126,16 @@ class UI(object):
                 saved = True
             else:
                 saved = False
-            gamewidget = GameWidget(self.scroll_area_contents, f'{data[1]} - {data[2]}', data[0], f'{completed}, Depth {data[5]}, {time}', self, savegamemanager, saved)
+            if data[5] == '0':
+                depth = 'Two player'
+            else:
+                depth = f'Depth {data[5]}'
+            gamewidget = GameWidget(self.scroll_area_contents, f'{data[1]} - {data[2]}', data[0], f'{completed}, {depth}, {time}', self, savegamemanager, saved)
             self.vertical_layout.addWidget(gamewidget.gamewidget)
             self.gamewidgets.append(gamewidget.gamewidget)
             self.parentgamewidgets.append(gamewidget)
-        #self.scroll_area.setWidget(self.scroll_area_contents)
+            self.games.append(i)
+            #print('refreshed games')
 
     def deleteAt(self, index, gameid):
         self.vertical_layout.itemAt(index).widget().setParent(None)

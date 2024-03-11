@@ -110,6 +110,8 @@ class SubWindow(QWidget):
                 player1_color = 'white'
             elif defaultcolor == 2:
                 player1_color = 'black'
+            if gametype != 0:
+                player1_color = 'white'
 
             flip = {'white': 'black', 'black': 'white'}
             self.configurations = (gametype, enginetype, enginedepth, rotateboard,

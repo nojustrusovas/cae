@@ -183,7 +183,10 @@ class ANIIL:
         timing = timing.split(',')
         time2 = timing[1][1:]
         time2 = time2.split('\n')
-        return (int(timing[0]), int(time2[0]))
+        if time2[0] == 'None':
+            return (None, None) # No time limit
+        else:
+            return (int(timing[0]), int(time2[0]))
 
 # ---
 

@@ -28,6 +28,7 @@ class SubWindow(QWidget):
 
     def refreshGames(self) -> None:
         'Refreshes the list of game widgets according to the new filter and sort choices.'
+        print('meow')
         sort_index = self.ui.sort_combo.currentIndex()
         filter_index = self.ui.filter_combo.currentIndex()
         # Handle Sorts

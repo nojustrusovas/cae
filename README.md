@@ -6,7 +6,7 @@
 
 ### Manual Installation for macOS
 
-* Copy the repository into the directory of your choice, and active the virtual environment:
+* Copy the repository into the directory of your choice, and active the virtual environment using Python 3.11.3:
 ```bash
 source .venv/bin/activate
 ```
@@ -44,7 +44,7 @@ Numerous options for accessibility and configurations from board themes to time 
 
 ## Information
 
-Windows and linux systems are not supported until a public release version is finished. If you do manually install this application on your macOS system, please [raise](https://github.com/nojustrusovas/cae/issues/new) any issues you may come across.
+Windows and linux systems are not supported until a public release version is finished. If you do manually install this application on your macOS system, please [raise](https://github.com/nojustrusovas/cae/issues/new) any issues you may come across. 
 
 ### Credits
 
