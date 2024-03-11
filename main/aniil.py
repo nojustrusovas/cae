@@ -154,7 +154,7 @@ class ANIIL:
         with _target_file.open('r', encoding='utf-8') as file:
             lines = file.readlines()
             file.close()
-        fen = lines[3][5:]
+        fen = lines[4][5:]
         fen = fen.split('\n')
         return fen[0]
     
@@ -164,7 +164,7 @@ class ANIIL:
         with _target_file.open('r', encoding='utf-8') as file:
             lines = file.readlines()
             file.close()
-        templogs = lines[5:]
+        templogs = lines[6:]
         logs = []
         for templog in templogs:
             if (templog == '///') or (templog == ''):

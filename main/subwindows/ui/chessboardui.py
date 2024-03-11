@@ -492,6 +492,7 @@ class UI(object):
         self.analyse_label.setFont(font)
         self.analyse_label.setStyleSheet(u"QLabel {\n"
 "	background-color: rgba(255, 255, 255, 0);\n"
+"	color: #656565;\n"
 "	border: 0px solid #FFFFFF;\n"
 "}")
         

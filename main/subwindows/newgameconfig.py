@@ -116,7 +116,7 @@ class SubWindow(QWidget):
                                    player1_name, player2_name, time,  player1_color, fen, time)
             # configurations currently not in use: rotateboard
             
-            self.parent.setData(self.configurations)
+            self.parent.setData((self.configurations, False, None))
             if gametype == 0:
                 self.parent.initEngine(enginetype, flip[player1_color], fen, enginedepth, bullet)
             self.parent.setCurrentSubwindow(2)

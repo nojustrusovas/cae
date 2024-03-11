@@ -135,12 +135,15 @@ class SubWindow(QWidget):
         self.ui.clearCaptures()
 
         # Set chessboard configurations
-        configurations = data
+        configurations = data[0]
         if configurations is None:
             return
         else:
             # Init data file for this game
-            self.parent.newANIIL(configurations)
+            if data[1] is False:
+                self.parent.newANIIL(configurations)
+            else:
+                self.parent.loadANIIL(data[2])
 
             self.player1_name = configurations[4]
             self.player2_name = configurations[5]

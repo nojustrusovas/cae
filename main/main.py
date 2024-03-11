@@ -140,6 +140,11 @@ class MainWindow(QMainWindow):
             localtime = list(self.current_data_file.getLocalTime())
             settings = list(self.current_data_file.getSettings())
             return [id] + localtime + settings
+    
+    def transferANIILData(self, id) -> tuple:
+        'Returns standard data from ANIIL.'
+        self.loadANIIL(id)
+        return aniil.ANIILToStandardConfig(self.current_data_file)
 
 # Handles top-level exceptions
 def except_hook(cls, exception, traceback):

@@ -307,7 +307,14 @@ class GameWidget(QObject):
                 self.parent.current_widget = self
                 self.parent.deleteAt(target_index, self.gameid)
             elif obj.objectName() == 'Play':
-                pass
+                flip = {'white': 'black', 'black': 'white'}
+                configs = self.savegamemanager.parent.transferANIILData(self.gameid)
+
+                # Load game
+                self.savegamemanager.parent.setData((configs, True, self.gameid))
+                if configs[0] == 0:
+                    self.savegamemanager.parent.initEngine(configs[1], flip[configs[7]], configs[8], configs[2], False)
+                self.savegamemanager.parent.setCurrentSubwindow(2)
     
     def buttonHover(self, index) -> None:
         if index == 1:
