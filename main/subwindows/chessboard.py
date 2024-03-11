@@ -144,6 +144,7 @@ class SubWindow(QWidget):
                 self.parent.newANIIL(configurations)
             else:
                 self.parent.loadANIIL(data[2])
+                self.loadLogs(self.parent.getANIILLogs())
 
             self.player1_name = configurations[4]
             self.player2_name = configurations[5]
@@ -409,7 +410,27 @@ class SubWindow(QWidget):
         # Make move
         self.enginereq = (piece, target)
         #self.movePiece(piece, target, True)
-        
+    
+    def loadLogs(self, logs: list[str]) -> None:
+        'Load logs from an array of notations.'
+        self.current_log = []
+        for log in logs:
+            log = log.split('/')
+            white_move = log[0]
+            black_move = log[1]
+
+            # white
+            self.current_log.append(white_move)
+            self.move_log_pointer += 1
+            self.move_log[self.move_log_pointer] = self.current_log[0]
+            self.updateMoveLog(False)
+
+            # black
+            self.current_log.append(black_move)
+            self.move_log[self.move_log_pointer] = (self.current_log[0], self.current_log[1])
+            self.current_log = []
+            self.updateMoveLog(True)
+
     # Imports FEN string
     def importFEN(self, fen: str) -> None:
         # Splits fen string into sections and sets variables

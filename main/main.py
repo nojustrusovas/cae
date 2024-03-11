@@ -146,6 +146,9 @@ class MainWindow(QMainWindow):
         self.loadANIIL(id)
         return aniil.ANIILToStandardConfig(self.current_data_file)
 
+    def getANIILLogs(self) -> list[str]:
+        return self.current_data_file.getLogs()
+
 # Handles top-level exceptions
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
