@@ -1480,8 +1480,10 @@ class SubWindow(QWidget):
                 if not self.firstmove:
                     self.timeController()
                     self.firstmove = True
+                    self.flipControls()
                     return True
                 self.timeSwitch()
+                self.flipControls()
                 return True
         else:
             return False
@@ -1588,7 +1590,15 @@ class SubWindow(QWidget):
             return valid
         else:
             return tempvalid
-            
+    
+    def flipControls(self) -> None:
+        'Flips controls for player vs player mode.'
+        if self.gametype == 'engine':
+            return
+        else:
+            flip = {'white': 'black', 'black': 'white'}
+            self.player1_color = flip[self.player1_color]
+
     def showHints(self, validmoves: list, piece) -> None:
         'Method to show hints on board'
         if self.hidehints is False:
