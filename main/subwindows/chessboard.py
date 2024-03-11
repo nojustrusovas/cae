@@ -1029,11 +1029,12 @@ class SubWindow(QWidget):
                         self.active_tile.setStyleSheet(f'background-color: {self.highlight2}')
 
                         # Engine move
-                        if not self.will_promote:
-                            self.engineactive = True
-                            self.engine_thread = EngineThread(self)
-                            self.engine_thread.finished.connect(self.engineMoveRequest)
-                            self.engine_thread.start()
+                        if self.gametype == 'engine':
+                            if not self.will_promote:
+                                self.engineactive = True
+                                self.engine_thread = EngineThread(self)
+                                self.engine_thread.finished.connect(self.engineMoveRequest)
+                                self.engine_thread.start()
                 else:
                     self.hideHints()
                     self.active_tile.resetColor()

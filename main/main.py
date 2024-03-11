@@ -5,9 +5,7 @@ import PySide6.QtCore
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
 from subwindows import homepage, newgameconfig, chessboard, savegamemanager
-from main.modules.engine import ChessEngine
-from main.modules.logic import Board
-import main.modules.aniil as aniil
+from modules import engine, logic, aniil
 
 
 class MainWindow(QMainWindow):
@@ -75,7 +73,7 @@ class MainWindow(QMainWindow):
 
     def initEngine(self, type: str, color: str, starting_fen: str, level: int, bullet: bool) -> None:
         'Initialises the chess engine.'
-        self.engine = ChessEngine(type, level, color, Board(starting_fen), bullet)
+        self.engine = engine.ChessEngine(type, level, color, logic.Board(starting_fen), bullet)
     
     def requestEngineMove(self) -> str:
         'Returns the best engine move.'

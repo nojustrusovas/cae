@@ -244,7 +244,6 @@ class InfoWindow(QMainWindow):
         self.parent.windowstack.pop()
         return super().closeEvent(event)
 
-
 class HelpWindow(QMainWindow):
     def __init__(self, parent: QWidget):
         super().__init__()

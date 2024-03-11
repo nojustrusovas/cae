@@ -1,5 +1,5 @@
 # main/engine.py
-from main.modules.logic import Board
+from modules.logic import Board
 from stockfish import Stockfish
 from random import randint
 
@@ -166,9 +166,3 @@ class ChessEngine:
     def updatePosition(self, newfen) -> None:
         'Updates internal position'
         self.current_position = Board(newfen)
-
-# chessboard = Board('rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1')
-# engine = ChessEngine('stockfish', 1, 'white', chessboard, True)
-# bestmove = engine.bestMove()
-# chessboard.movePieceRequest(chessboard.pieceAt(bestmove[0]+bestmove[1]), bestmove[2]+bestmove[3])
-# print(chessboard.fen.string)
