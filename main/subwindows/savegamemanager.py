@@ -28,7 +28,6 @@ class SubWindow(QWidget):
 
     def refreshGames(self) -> None:
         'Refreshes the list of game widgets according to the new filter and sort choices.'
-        print('meow')
         sort_index = self.ui.sort_combo.currentIndex()
         filter_index = self.ui.filter_combo.currentIndex()
         # Handle Sorts
@@ -169,31 +168,34 @@ class SubWindow(QWidget):
         return new
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.Enter:
-            if obj.objectName().isnumeric():
-                for gamewidget in self.ui.parentgamewidgets:
-                    if gamewidget.gameid == obj.objectName():
-                        # Execute
-                        gamewidget.gamewidget.setStyleSheet(u".QWidget {\n"
-"	background-color: #2C2C2C;\n"
-"	border-radius: 15px;\n"
-"	border: 0.5px solid #4E4E4E;\n"
-"}")
-                        gamewidget.play_button.show()
-                        gamewidget.save_button.show()
-                        gamewidget.delete_button.show()
-        elif event.type() == QEvent.Leave:
-            if obj.objectName().isnumeric():
-                for gamewidget in self.ui.parentgamewidgets:
-                    if gamewidget.gameid == obj.objectName():
-                        # Execute
-                        gamewidget.gamewidget.setStyleSheet(u".QWidget {\n"
-"	background-color: #2C2C2C;\n"
-"	border-radius: 15px;\n"
-"}")
-                        gamewidget.play_button.hide()
-                        gamewidget.save_button.hide()
-                        gamewidget.delete_button.hide()
+        try:
+            if event.type() == QEvent.Enter:
+                if obj.objectName().isnumeric():
+                    for gamewidget in self.ui.parentgamewidgets:
+                        if gamewidget.gameid == obj.objectName():
+                            # Execute
+                            gamewidget.gamewidget.setStyleSheet(u".QWidget {\n"
+    "	background-color: #2C2C2C;\n"
+    "	border-radius: 15px;\n"
+    "	border: 0.5px solid #4E4E4E;\n"
+    "}")
+                            gamewidget.play_button.show()
+                            gamewidget.save_button.show()
+                            gamewidget.delete_button.show()
+            elif event.type() == QEvent.Leave:
+                if obj.objectName().isnumeric():
+                    for gamewidget in self.ui.parentgamewidgets:
+                        if gamewidget.gameid == obj.objectName():
+                            # Execute
+                            gamewidget.gamewidget.setStyleSheet(u".QWidget {\n"
+    "	background-color: #2C2C2C;\n"
+    "	border-radius: 15px;\n"
+    "}")
+                            gamewidget.play_button.hide()
+                            gamewidget.save_button.hide()
+                            gamewidget.delete_button.hide()
+        except AttributeError as e:
+            print(f'<Savegamemanager> Exception raised: {e}')
         return False
     
     # Close all open windows before changing sub window

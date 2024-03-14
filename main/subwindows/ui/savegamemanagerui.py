@@ -282,49 +282,53 @@ class GameWidget(QObject):
             self.markAsSaved()
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.Enter:
-            if obj.objectName() == 'Save':
-                self.buttonHover(1)
-            elif obj.objectName() == 'Delete':
-                self.buttonHover(2)
-            elif obj.objectName() == 'Play':
-                self.buttonHover(3)
-        elif event.type() == QEvent.Leave:
-            if obj.objectName() == 'Save':
-                self.buttonUnHover(1)
-            elif obj.objectName() == 'Delete':
-                self.buttonUnHover(2)
-            elif obj.objectName() == 'Play':
-                self.buttonUnHover(3)
-        elif event.type() == QEvent.MouseButtonPress:
-            if obj.objectName() == 'Save':
-                self.savegamemanager.parent.loadANIIL(self.gameid)
-                if self.saved:
-                    self.markAsSaved(False)
-                    self.savegamemanager.parent.current_data_file.setSaved(False)
-                else:
-                    self.markAsSaved()
-                    self.savegamemanager.parent.current_data_file.setSaved()
-                self.saved = not self.saved
-                if not self.saved:
-                    self.save_icon.load('main/images/save-hover.svg')
-                else:
-                    self.save_icon.load('main/images/save-active.svg')
-                self.parent.current_widget = self
-                self.parent.refreshGames()
-            elif obj.objectName() == 'Delete':
-                target_index = self.parent.games.index(self.gameid)
-                self.parent.current_widget = self
-                self.parent.deleteAt(target_index, self.gameid)
-            elif obj.objectName() == 'Play':
-                flip = {'white': 'black', 'black': 'white'}
-                configs = self.savegamemanager.parent.transferANIILData(self.gameid)
+        try:
+            if event.type() == QEvent.Enter:
+                if obj.objectName() == 'Save':
+                    self.buttonHover(1)
+                elif obj.objectName() == 'Delete':
+                    self.buttonHover(2)
+                elif obj.objectName() == 'Play':
+                    self.buttonHover(3)
+            elif event.type() == QEvent.Leave:
+                if obj.objectName() == 'Save':
+                    self.buttonUnHover(1)
+                elif obj.objectName() == 'Delete':
+                    self.buttonUnHover(2)
+                elif obj.objectName() == 'Play':
+                    self.buttonUnHover(3)
+            elif event.type() == QEvent.MouseButtonPress:
+                if obj.objectName() == 'Save':
+                    self.savegamemanager.parent.loadANIIL(self.gameid)
+                    if self.saved:
+                        self.markAsSaved(False)
+                        self.savegamemanager.parent.current_data_file.setSaved(False)
+                    else:
+                        self.markAsSaved()
+                        self.savegamemanager.parent.current_data_file.setSaved()
+                    self.saved = not self.saved
+                    if not self.saved:
+                        self.save_icon.load('main/images/save-hover.svg')
+                    else:
+                        self.save_icon.load('main/images/save-active.svg')
+                    self.parent.current_widget = self
+                    self.parent.refreshGames()
+                elif obj.objectName() == 'Delete':
+                    target_index = self.parent.games.index(self.gameid)
+                    self.parent.current_widget = self
+                    self.parent.deleteAt(target_index, self.gameid)
+                elif obj.objectName() == 'Play':
+                    flip = {'white': 'black', 'black': 'white'}
+                    configs = self.savegamemanager.parent.transferANIILData(self.gameid)
 
-                # Load game
-                self.savegamemanager.parent.setData((configs, True, self.gameid))
-                if configs[0] == 0:
-                    self.savegamemanager.parent.initEngine(configs[1], flip[configs[7]], configs[8], configs[2], False)
-                self.savegamemanager.parent.setCurrentSubwindow(2)
+                    # Load game
+                    self.savegamemanager.parent.setData((configs, True, self.gameid))
+                    if configs[0] == 0:
+                        self.savegamemanager.parent.initEngine(configs[1], flip[configs[7]], configs[8], configs[2], False)
+                    self.savegamemanager.parent.setCurrentSubwindow(2)
+        except AttributeError as e:
+            print(f'<Savegamemanager> Exception raised: {e}')
+        return False
     
     def buttonHover(self, index) -> None:
         if index == 1:

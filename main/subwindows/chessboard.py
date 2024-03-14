@@ -354,7 +354,6 @@ class SubWindow(QWidget):
                     if self.kingpos[oppositeking] in checksquares:
                         self.check = True
                         self.checkFunc(flip[widgetinfo[1]])
-                        print(flip[widgetinfo[1]])
                         break
                 else:
                     continue
@@ -586,7 +585,6 @@ class SubWindow(QWidget):
                     if self.kingpos[oppositeking] in checksquares:
                         self.check = True
                         self.checkFunc(flip[widgetinfo[1]])
-                        print(flip[widgetinfo[1]])
                         break
                 else:
                     continue
@@ -1430,7 +1428,6 @@ class SubWindow(QWidget):
                         if self.kingpos[oppositeking] in checksquares:
                             self.check = True
                             self.checkFunc(flip[widgetinfo[1]])
-                            print(flip[widgetinfo[1]])
                             break
                     else:
                         continue
